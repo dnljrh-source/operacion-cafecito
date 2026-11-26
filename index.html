@@ -435,9 +435,9 @@ const ETAPA3=(()=>{
   const stair=[]; for(let a=-12.75;a<23-0.01;a+=2.5){ const b=Math.min(23,a+2.5); stair.push({a,b,z:r2(Zt((a+b)/2))}); }
   const zAt=x=>{ for(const s of stair) if(x>=s.a-1e-6&&x<s.b-1e-6) return s.z; return stair[stair.length-1].z; };
   const items=[
-    {t:'piso',mat:'madera',x0:-12.75,z0:-10,x1:3,z1:-3.75},{t:'piso',mat:'baldosa',x0:-15.25,z0:-5.5,x1:-11.5,z1:-1},
+    {t:'piso',mat:'madera',x0:-12.75,z0:-11,x1:3,z1:-3.75},{t:'piso',mat:'baldosa',x0:-15.25,z0:-5.5,x1:-11.5,z1:-1},
     // zonas fuera del verde y núcleo del edificio
-    {t:'nucleo',x0:-23,z0:-10,x1:-15.25,z1:2.75},{t:'nucleo',x0:-15.25,z0:-10,x1:-12.75,z1:-5.5},
+    {t:'nucleo',x0:-23,z0:-11,x1:-15.25,z1:2.75},{t:'nucleo',x0:-15.25,z0:-11,x1:-12.75,z1:-5.5},
     {t:'nucleo',x0:-15.25,z0:-1,x1:-11.5,z1:2.75},{t:'nucleo',x0:-11.5,z0:-1,x1:-9.25,z1:1.75},
     {t:'nucleo',x0:-9.5,z0:-0.75,x1:4.5,z1:4.75},{t:'nucleo',x0:-9.5,z0:-3.75,x1:3,z1:-0.75},{t:'nucleo',x0:4.5,z0:-0.75,x1:6.25,z1:1.6},
     // M: salas 5, 4 y 6 · S: baños y salas de apoyo
@@ -445,13 +445,16 @@ const ETAPA3=(()=>{
     // N: sala 9 · G2: gerencia izquierda
     {t:'vidrio',x0:-18.75,z0:2.75,x1:-18.75,z1:4},{t:'vidrio',x0:-18.75,z0:5,x1:-18.75,z1:5.75},{t:'muro',x0:-23,z0:5.75,x1:-18.75,z1:5.75},
     {t:'mesa',x0:-22.2,z0:3.5,x1:-20.2,z1:4.5},{t:'tele',x:-22.85,z:4,r:90},
-    {t:'vidrio',x0:-18.75,z0:7.1,x1:-18.75,z1:10},{t:'mesa',x0:-22.4,z0:6.8,x1:-21.4,z1:8.6},{t:'tele',x:-22.85,z:9.2,r:90},{t:'planta_alta',x:-22.55,z:6.2,r:0},{t:'archivo',x0:-21.3,z0:9.45,x1:-19.6,z1:9.85},
-    // L / K / J: bancadas
-    {t:'cubiculos',x0:-17.9,z0:6.45,x1:-10.7,z1:9.95,gente:0.3},{t:'cubiculos',x0:-8.75,z0:6.45,x1:-3.95,z1:9.95,gente:0.3},
-    {t:'cubiculos',x0:-2.4,z0:6.45,x1:2.4,z1:9.95,gente:0.3},{t:'cubiculos',x0:3.9,z0:6.45,x1:11.1,z1:9.95,gente:0.3},{t:'cubiculos',x0:12.6,z0:6.45,x1:17.4,z1:9.95,gente:0.3},
-    {t:'pilar',x:-9.7,z:9.65,r:0},{t:'pilar',x:-3.2,z:9.65,r:0},{t:'pilar',x:3.15,z:9.65,r:0},{t:'pilar',x:11.85,z:9.65,r:0},
+    {t:'vidrio',x0:-18.75,z0:7.1,x1:-18.75,z1:11},{t:'mesa',x0:-22.4,z0:6.8,x1:-21.4,z1:8.6},{t:'tele',x:-22.85,z:9.6,r:90},{t:'planta_alta',x:-22.55,z:6.2,r:0},{t:'archivo',x0:-21.3,z0:10.45,x1:-19.6,z1:10.85},
+    // L / K / J: bancadas perpendiculares al ventanal (3 puestos por lado; K: 2 por lado). Pasillo 2,4 m = 2/3 del largo
+    {t:'cubiculos',x0:-18.2,z0:7.15,x1:-16.6,z1:10.75,gente:0.3},{t:'cubiculos',x0:-14.8,z0:7.15,x1:-13.2,z1:10.75,gente:0.3},{t:'cubiculos',x0:-11.4,z0:7.15,x1:-9.8,z1:10.75,gente:0.3},
+    {t:'cubiculos',x0:-8.3,z0:7.15,x1:-6.7,z1:9.55,gente:0.3},{t:'cubiculos',x0:-4.9,z0:7.15,x1:-3.3,z1:9.55,gente:0.3},
+    {t:'cubiculos',x0:-1.5,z0:7.15,x1:0.1,z1:9.55,gente:0.3},{t:'cubiculos',x0:1.9,z0:7.15,x1:3.5,z1:9.55,gente:0.3},
+    {t:'cubiculos',x0:5.5,z0:7.15,x1:7.1,z1:10.75,gente:0.3},{t:'cubiculos',x0:8.9,z0:7.15,x1:10.5,z1:10.75,gente:0.3},
+    {t:'cubiculos',x0:12.3,z0:7.15,x1:13.9,z1:10.75,gente:0.3},{t:'cubiculos',x0:15.7,z0:7.15,x1:17.3,z1:10.75,gente:0.3},
+    {t:'pilar',x:-5.8,z:10.5,r:0},{t:'pilar',x:0.9,z:10.5,r:0},
     // rincón de la foto: pizarra, cafetera y extintor contra el muro gris
-    {t:'pizarra',x:-17.6,z:5.1,r:180},{t:'extintor',x:-14.5,z:4.95,r:180},{t:'planta_alta',x:-9.9,z:5.1,r:0},
+    {t:'pizarra',x:-17.4,z:5.1,r:180},{t:'extintor',x:-14.5,z:4.95,r:180},{t:'planta_alta',x:-9.9,z:5.1,r:0},
     {t:'letrero',x:-17.3,z:4.8,r:180,text:'SALA 5 · CHISPA'},{t:'letrero',x:-13.2,z:4.8,r:180,text:'SALA 4 · CLARIDAD'},{t:'letrero',x:-10.4,z:4.8,r:180,text:'SALA 6'},
     {t:'letrero',x:-2,z:4.8,r:180,text:'Love'},{t:'letrero',x:-18.7,z:3.4,r:90,text:'SALA 9 · RED'},{t:'letrero',x:-18.7,z:8.6,r:90,text:'GERENCIA'},
     {t:'letrero',x:5.75,z:4.8,r:180,text:'BAÑOS'},{t:'letrero',x:11.8,z:4.8,r:180,text:'VÍA DE EVACUACIÓN'},{t:'letrero',x:11.8,z:1.55,r:0,text:'IMPRESIÓN'},
@@ -463,7 +466,7 @@ const ETAPA3=(()=>{
     // F: sala 11 · G1: gerencia derecha
     {t:'vidrio',x0:19.25,z0:zAt(19.2),x1:19.25,z1:0},{t:'vidrio',x0:19.25,z0:1.1,x1:19.25,z1:4.75},{t:'muro',x0:19.25,z0:4.75,x1:23,z1:4.75},
     {t:'mesa',x0:20.3,z0:-0.4,x1:21.9,z1:3.9},{t:'tele',x:22.85,z:1.8,r:270},{t:'letrero',x:19.2,z:2.9,r:270,text:'SALA 11 · PROPÓSITO'},
-    {t:'vidrio',x0:19.25,z0:5.95,x1:19.25,z1:10},{t:'mesa',x0:21.4,z0:7,x1:22.6,z1:8.6},{t:'tele',x:22.85,z:9.1,r:270},{t:'planta_alta',x:22.5,z:5.3,r:0},{t:'archivo',x0:20.2,z0:9.45,x1:21.9,z1:9.85},
+    {t:'vidrio',x0:19.25,z0:5.95,x1:19.25,z1:11},{t:'mesa',x0:21.4,z0:7,x1:22.6,z1:8.6},{t:'tele',x:22.85,z:9.6,r:270},{t:'planta_alta',x:22.5,z:5.3,r:0},{t:'archivo',x0:20.2,z0:10.45,x1:21.9,z1:10.85},
     {t:'letrero',x:19.2,z:8,r:270,text:'GERENCIA GENERAL'},
     // D: sala 10 y estar · E: sala 8
     {t:'vidrio',x0:11,z0:zAt(11),x1:11,z1:-0.9},{t:'vidrio',x0:11,z0:-0.9,x1:12.9,z1:-0.9},{t:'vidrio',x0:13.8,z0:-0.9,x1:15.6,z1:-0.9},
@@ -486,12 +489,12 @@ const ETAPA3=(()=>{
   ];
   // diagonal superior en escalones: ventanal
   stair.forEach((s,i)=>{ items.push({t:'ventana',x0:s.a,z0:s.z,x1:s.b,z1:s.z}); const n=stair[i+1]; if(n) items.push({t:'ventana',x0:s.b,z0:s.z,x1:s.b,z1:n.z}); });
-  return {v:1,name:'Etapa 3 · Piso 9',estilo:'loft',size:{w:46,d:20},
-    start:{x:-1.2,z:5.6,r:90},
-    obj:{capsule:null,machines:[{x:-15.6,z:5.08,r:180},{x:-14.92,z:-3.9,r:90},{x:5.6,z:r2(zAt(5.6)+0.33),r:180}],desk:{x:-1.2,z:7.78,r:0}},
+  return {v:1,name:'Etapa 3 · Piso 9',estilo:'loft',size:{w:46,d:22},
+    start:{x:-0.7,z:5.9,r:90},
+    obj:{capsule:null,machines:[{x:-15.6,z:5.08,r:180},{x:-14.92,z:-3.9,r:90},{x:5.6,z:r2(zAt(5.6)+0.33),r:180}],desk:{x:-1.12,z:7.75,r:270}},
     items,
     bosses:[
-      {name:'Daniel Jara',look:'gonzalo',speed:1.0,loop:false,path:[{x:20,z:6.2,w:3,face:270,sweep:30},{x:20,z:9.2,w:3,face:270,sweep:30}]},
+      {name:'Daniel Jara',look:'gonzalo',speed:1.0,loop:false,path:[{x:20,z:6.2,w:3,face:270,sweep:30},{x:20,z:10.2,w:3,face:270,sweep:30}]},
       {name:'Alexandro Ramirez',look:'alexandro',speed:1.0,loop:false,path:[{x:-20.3,z:8.8,w:4,face:90,sweep:25},{x:-20.3,z:6.6,w:3,face:90,sweep:30}]},
       {name:'Martin Lion',look:'ricardo',speed:1.3,loop:false,path:[{x:-17.6,z:5.95,w:3,face:90,sweep:30},{x:7.8,z:5.95,w:2,face:0,sweep:20},{x:18.4,z:5.95,w:3,face:270,sweep:30}]},
       {name:'Claudius Hurtado',look:'mauricio',speed:1.2,loop:false,path:[{x:-12.2,z:-3.6,w:3,face:270,sweep:30},{x:-12.2,z:-4.6,w:0,face:90,sweep:0},{x:3.6,z:-4.6,w:2,face:180,sweep:30},{x:7,z:-4,w:0,face:90,sweep:0},{x:8.5,z:-3.2,w:0,face:180,sweep:0},{x:8.5,z:-0.1,w:0,face:90,sweep:0},{x:14.5,z:0.3,w:3,face:0,sweep:30}]}
@@ -572,7 +575,7 @@ function layout(map){
         case 'meson': S(R.cx,R.cz,R.w,R.d,0.92,'low'); props.push({k:'counter',x:R.cx,z:R.cz,w:R.w,d:R.d}); break;
         case 'nucleo': S(R.cx,R.cz,R.w,R.d,3.2,'wall'); props.push({k:'core',x:R.cx,z:R.cz,w:R.w,d:R.d}); break;
         case 'cubiculos': {
-          const alongX=R.w>=R.d, L=alongX?R.w:R.d, T2=alongX?R.d:R.w, n=Math.max(1,Math.floor((L+0.01)/2.4)), len=n*2.4, dbl=T2>=3.5;
+          const alongX=R.w>=R.d, L=alongX?R.w:R.d, T2=alongX?R.d:R.w, PT=loft?1.2:2.4, CH=loft?1.05:1.15, n=Math.max(1,Math.floor((L+0.01)/PT)), len=n*PT, dbl=loft||T2>=3.5;
           const P=(u,v)=>alongX?[R.cx+u,R.cz+v]:[R.cx+v,R.cz+u];
           const SZ=(su,sv)=>alongX?[su,sv]:[sv,su];
           const YW=(du,dv)=>{ const d=alongX?[du,dv]:[dv,du]; return Math.atan2(d[0],d[1]); };
@@ -584,11 +587,11 @@ function layout(map){
           part(0,vs,len,0.08);
           for(let i=0;i<=n;i++) part(-len/2+i*2.4,(vmin+vmax)/2,0.08,vmax-vmin); }
           for(let i=0;i<n;i++) for(const s of (dbl?[-1,1]:[1])){
-            const cu=-len/2+(i+0.5)*2.4, [dx,dz]=P(cu,vs+s*0.42), [chx,chz]=P(cu,vs+s*1.15);
+            const cu=-len/2+(i+0.5)*PT, [dx,dz]=P(cu,vs+s*0.42), [chx,chz]=P(cu,vs+s*CH);
             const mine=!deskUsed&&Math.hypot(dx-deskP.x,dz-deskP.z)<0.75; if(mine) deskUsed=true;
-            const [dw,dd]=SZ(loft?2.36:1.8,0.7); S(dx,dz,dw,dd,0.76,'low');
-            props.push({k:'desk',x:dx,z:dz,yaw:YW(0,s),mine,w:loft?2.36:1.8});
-            const cx2=mine?P(cu+0.55,vs+s*1.3):[chx,chz];
+            const [dw,dd]=SZ(loft?PT-0.03:1.8,0.7); S(dx,dz,dw,dd,0.76,'low');
+            props.push({k:'desk',x:dx,z:dz,yaw:YW(0,s),mine,w:loft?PT-0.03:1.8});
+            const cx2=mine?(loft?P(cu+0.25,vs+s*1.25):P(cu+0.55,vs+s*1.3)):[chx,chz];
             props.push({k:'chair',x:cx2[0],z:cx2[1],yaw:YW(0,-s)});
             if(!mine&&hrand(idx,i,s+2)<(it.gente===undefined?0.25:it.gente)){ S(chx,chz,0.6,0.6,1.3,'person'); props.push({k:'worker',x:chx,z:chz,yaw:YW(0,-s),seed:idx*31+i*3+s+2}); }
           }
@@ -901,12 +904,12 @@ function createEngine(){
       case 'desk': { const g=group(p.x,p.z,p.yaw);
         if(loft){ const w=p.w||1.8;
           box(0xe8dcc8,w-0.04,0.04,0.72,0,0.74,0,g); for(const s of [-1,1]){ box(0xf4f4f2,0.05,0.72,0.05,s*(w/2-0.1),0.36,0.3,g); box(0xf4f4f2,0.05,0.04,0.64,s*(w/2-0.1),0.02,0,g); }
-          const side=(p.x*7+p.z*3)%2<1?-1:1; box(0xf1f1ef,0.42,0.6,0.56,side*(w/2-0.36),0.31,0.02,g); for(const y of [0.15,0.33,0.5]) box(0xc4c8cc,0.28,0.015,0.01,side*(w/2-0.36),y,0.305,g,true);
-          box(0x2a2d33,0.05,0.26,0.05,0,0.88,-0.3,g); box(0x2a2d33,0.72,0.03,0.04,0,1.0,-0.26,g,true);
-          for(const [mx,mat] of [[-0.34,screenMat],[0.34,codeMat]]){ box(0x16181c,0.6,0.37,0.035,mx,1.12,-0.21,g); box(mat,0.56,0.32,0.006,mx,1.125,-0.19,g,true); }
-          box(0x2b2e33,0.44,0.02,0.15,0,0.77,0.1,g); box(0x2b2e33,0.07,0.02,0.1,0.33,0.77,0.12,g,true);
-          if(p.mine){ box(MB(0xffe066),0.08,0.08,0.006,-0.08,1.27,-0.188,g,true); box(MB(0xff9fb0),0.07,0.07,0.006,-0.6,0.98,-0.188,g,true); box(0xf4f1ea,0.24,0.02,0.1,-0.7,0.78,0.15,g); }
-          else { if(rnd()<0.55) cyl(rnd()<.5?0xf4f1ea:0x5d8aa8,0.08,0.1,0.08,0.7,0.81,0.12,g); if(rnd()<0.35) cyl(MB(0xcfe6f2),0.08,0.24,0.08,-0.75,0.88,-0.1,g); if(rnd()<0.5) box(0xf7f7f2,0.3,0.03,0.22,-0.6,0.78,0.08,g); }
+          const side=1; box(0xf1f1ef,0.42,0.6,0.56,side*(w/2-0.27),0.31,0.02,g); for(const y of [0.15,0.33,0.5]) box(0xc4c8cc,0.28,0.015,0.01,side*(w/2-0.27),y,0.305,g,true);
+          const mw=w<1.5?0.5:0.6, mo=w<1.5?0.26:0.34; box(0x2a2d33,0.05,0.26,0.05,0,0.88,-0.3,g); box(0x2a2d33,mo*2+0.04,0.03,0.04,0,1.0,-0.26,g,true);
+          for(const [mx,mat] of [[-mo,screenMat],[mo,codeMat]]){ box(0x16181c,mw,mw*0.6,0.035,mx,1.1,-0.21,g); box(mat,mw-0.04,mw*0.6-0.05,0.006,mx,1.105,-0.19,g,true); }
+          box(0x2b2e33,0.4,0.02,0.14,0,0.77,0.1,g); box(0x2b2e33,0.07,0.02,0.1,0.28,0.77,0.12,g,true);
+          if(p.mine){ box(MB(0xffe066),0.08,0.08,0.006,-0.08,1.22,-0.188,g,true); box(MB(0xff9fb0),0.07,0.07,0.006,-mo-0.2,0.98,-0.188,g,true); box(0xf4f1ea,0.2,0.02,0.1,-w/2+0.18,0.78,0.15,g); }
+          else { if(rnd()<0.55) cyl(rnd()<.5?0xf4f1ea:0x5d8aa8,0.08,0.1,0.08,w/2-0.14,0.81,0.14,g); if(rnd()<0.35) cyl(MB(0xcfe6f2),0.08,0.24,0.08,-w/2+0.12,0.88,-0.05,g); }
           break; }
         box(0xcfae84,1.8,0.05,0.7,0,0.74,0,g); box(0xaeb7c0,0.05,0.72,0.66,-0.86,0.36,0,g); box(0xaeb7c0,0.05,0.72,0.66,0.86,0.36,0,g); box(0xa3acb5,1.7,0.42,0.03,0,0.5,-0.32,g);
         box(0x2a2d33,0.62,0.38,0.04,0,1.08,-0.18,g); box(0x2a2d33,0.06,0.2,0.06,0,0.86,-0.19,g); box(0x2a2d33,0.26,0.02,0.18,0,0.77,-0.18,g);
