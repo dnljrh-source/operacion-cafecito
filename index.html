@@ -224,6 +224,7 @@ body.editing #editor{display:grid}
     <p class="brief" style="font-size:15px;color:var(--muted)">El cono en el piso es lo que ve cada jefe; la parte intensa te ve incluso agachado. Agachado, los tabiques te tapan. Con el café lleno no puedes correr.</p>
     <label class="msel">Mapa <select id="mapPick" aria-label="Mapa a jugar"></select></label>
     <div class="row"><button id="startBtn">Jugar</button><button id="rankBtn" class="ghost" hidden>Ranking</button><button id="editBtn" class="ghost">Editor de mapas</button></div>
+    <p class="note" id="whoLine" hidden>Jugando como <b id="whoName"></b> · <a href="#" id="whoChange">cambiar</a></p>
     <p id="err" hidden></p>
     <p class="note" id="touchNote" hidden>El juego necesita teclado y mouse.</p>
   </div>
@@ -244,6 +245,15 @@ body.editing #editor{display:grid}
     <div class="row"><button id="retryBtn">Reintentar <kbd>R</kbd></button><button class="ghost toEditor">Volver al editor</button><button class="ghost toMenu">Menú</button></div>
   </div>
 </div>
+<div id="nameAsk" class="screen">
+  <div class="card">
+    <h2 class="big">¿Cómo te llamas?</h2>
+    <p class="brief">Es el nombre que sale en el ranking. Queda guardado en este navegador y no te lo vuelvo a preguntar.</p>
+    <label class="f">Tu nombre<input id="nName" maxlength="20" placeholder="Ej: Pedro" autocomplete="nickname"></label>
+    <div class="row"><button id="nOk">Listo</button><button id="nBack" class="ghost">Volver</button><span id="nMsg" role="status"></span></div>
+  </div>
+</div>
+
 <div id="win" class="screen">
   <div class="card">
     <h2 class="big">Café en el escritorio</h2>
@@ -255,7 +265,7 @@ body.editing #editor{display:grid}
     </div>
     <div class="routeBox" id="wRouteBox" hidden><canvas id="wRoute" aria-label="Plano con el recorrido"></canvas><div class="routeCap" id="wRouteCap"></div></div>
     <div class="scorebox" id="saveBox" hidden>
-      <label class="f">Tu nombre para el ranking<input id="wName" maxlength="20" placeholder="Ej: Pedro" autocomplete="nickname"></label>
+      <label class="f" id="wNameRow" hidden>Tu nombre para el ranking<input id="wName" maxlength="20" placeholder="Ej: Pedro" autocomplete="nickname"></label>
       <div class="row"><button id="wSave" class="sm">Guardar en el ranking</button><span id="wMsg" role="status"></span></div>
       <div class="rscroll" id="wTopBox" hidden><table class="rtable"><thead><tr><th class="n">#</th><th>Nombre</th><th class="n">Tiempo</th><th class="n">Visto</th><th>Nota</th></tr></thead><tbody id="wTop"></tbody></table></div>
     </div>
@@ -346,7 +356,7 @@ const fmt2=t=>{ const cs=Math.round((Number(t)||0)*100); return String(Math.floo
 let toastT=0;
 function toast(msg,secs){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); toastT=secs||2.6; }
 setInterval(()=>{ if(toastT>0){ toastT-=0.1; if(toastT<=0) $('toast').classList.remove('show'); } },100);
-function showScreen(id){ if(id){ $('toast').classList.remove('show'); toastT=0; } for(const s of ['menu','pause','caught','win','rank']) $(s).classList.toggle('show',s===id); }
+function showScreen(id){ if(id){ $('toast').classList.remove('show'); toastT=0; } for(const s of ['menu','pause','caught','win','rank','nameAsk']) $(s).classList.toggle('show',s===id); }
 
 /* ================= datos ================= */
 const LOOKS=[
@@ -1321,7 +1331,7 @@ function showMenu(){
   showScreen('menu');
 }
 $('mapPick').addEventListener('change',()=>{ menuPick=$('mapPick').value; const m=mapById(menuPick); if(m&&engine) engine.load(m.map,menuPick,m.name); });
-$('startBtn').addEventListener('click',()=>{ if(!engine) return; const m=mapById(menuPick)||mapById('original'); engine.start(m.map,menuPick,{name:m.name,onExit:w=>{ if(w==='editor') openEditor(menuPick); else showMenu(); }}); });
+$('startBtn').addEventListener('click',()=>{ if(!engine) return; if(rankingOn&&!myName){ askName(()=>$('startBtn').click()); return; } const m=mapById(menuPick)||mapById('original'); engine.start(m.map,menuPick,{name:m.name,onExit:w=>{ if(w==='editor') openEditor(menuPick); else showMenu(); }}); });
 if(!engine) $('startBtn').disabled=true;
 $('editBtn').addEventListener('click',()=>{ try{ history.replaceState(null,'','#editor'); }catch(e){} openEditor(menuPick); });
 window.addEventListener('hashchange',()=>{ if(location.hash==='#editor'){ if(!document.body.classList.contains('editing')) openEditor(menuPick); } else if(document.body.classList.contains('editing')) closeEditor(); });
@@ -1441,6 +1451,16 @@ async function showRemoteRoute(r,mapName,w){
   }catch(e){ cap.textContent=netMsg(e); }
 }
 let myName=''; try{ myName=localStorage.getItem('cafecito-nombre')||''; }catch(e){}
+function setMyName(n){ myName=String(n||'').trim().slice(0,20); try{ localStorage.setItem('cafecito-nombre',myName); }catch(e){} refreshWho(); }
+function refreshWho(){ $('whoLine').hidden=!rankingOn||!myName; $('whoName').textContent=myName; }
+let nameNext=null;
+function askName(next){ nameNext=next||null; $('nName').value=myName; $('nMsg').textContent=''; showScreen('nameAsk'); setTimeout(()=>$('nName').focus(),50); }
+$('nOk').addEventListener('click',()=>{ const n=$('nName').value.trim(); if(!n){ $('nMsg').textContent='Escribe un nombre.'; $('nName').focus(); return; }
+  setMyName(n); const go=nameNext; nameNext=null; showScreen('menu'); if(go) go(); });
+$('nName').addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Enter') $('nOk').click(); });
+$('nBack').addEventListener('click',()=>{ nameNext=null; showScreen('menu'); });
+$('whoChange').addEventListener('click',e=>{ e.preventDefault(); askName(null); });
+setTimeout(refreshWho,0);
 let lastRun=null, saving=false;
 // Cada partida se registra en el servidor al empezar: anota la hora y sortea la cafetera con café.
 let curRun={seq:0,id:null,wait:null,err:''};
@@ -1456,11 +1476,12 @@ document.addEventListener('cafe-win',ev=>{
   const d=ev.detail; lastMap=d.map||null; showRoute('w',lastMap,d.ruta,'Tu recorrido');
   lastRun={m:d.m,t:Math.round(d.t*100)/100,s:d.s,st:d.st,lb:d.lb,seq:d.seq,ruta:d.ruta,saved:false};
   const box=$('saveBox'); box.hidden=!rankingOn||d.fromEditor||d.ghost; if(box.hidden) return;
-  $('wName').value=myName; $('wSave').disabled=false; $('wTopBox').hidden=true;
-  $('wMsg').textContent=lastRun.t<Math.max(8,lastRun.lb*0.97)?'Ese tiempo es más rápido de lo que permite el mapa, así que no se puede guardar.':'¿Quieres anotarte?';
-  if(lastRun.t<Math.max(8,lastRun.lb*0.97)) $('wSave').disabled=true;
+  $('wName').value=myName; $('wSave').disabled=false; $('wTopBox').hidden=true; $('wNameRow').hidden=!!myName; $('wSave').hidden=!!myName;
+  if(lastRun.t<Math.max(8,lastRun.lb*0.97)){ $('wMsg').textContent='Ese tiempo es más rápido de lo que permite el mapa, así que no se puede guardar.'; $('wSave').disabled=true; $('wSave').hidden=true; return; }
+  if(myName){ $('wMsg').textContent=`Guardando como ${myName}…`; setTimeout(()=>$('wSave').click(),0); }
+  else $('wMsg').textContent='¿Quieres anotarte?';
 });
-$('wName').addEventListener('input',()=>{ myName=$('wName').value.trim().slice(0,20); try{ localStorage.setItem('cafecito-nombre',myName); }catch(e){} });
+$('wName').addEventListener('input',()=>setMyName($('wName').value));
 $('wName').addEventListener('keydown',e=>{ if(e.key==='Enter') $('wSave').click(); });
 $('wSave').addEventListener('click',async()=>{
   if(!lastRun||lastRun.saved||saving) return;
@@ -1472,14 +1493,14 @@ $('wSave').addEventListener('click',async()=>{
     if(!r.id){ lastRun.saved=true; $('wMsg').textContent=r.err||'Esta partida no quedó registrada, así que no se puede guardar.'; saving=false; return; }
     const res=await supa('rpc/guardar_puntaje',{method:'POST',body:JSON.stringify({p_partida:r.id,p_nombre:n,p_tiempo:lastRun.t,p_visto:lastRun.s,p_estrellas:lastRun.st,p_ruta:lastRun.ruta})});
     if(!res||res.ok!==true){ const msg=(res&&res.error)||'El ranking rechazó el puntaje.';
-      $('wMsg').textContent=msg; if(/nombre/i.test(msg)){ $('wSave').disabled=false; $('wName').focus(); } else lastRun.saved=true; saving=false; return; }
+      $('wMsg').textContent=msg; if(/nombre/i.test(msg)){ $('wNameRow').hidden=false; $('wSave').hidden=false; $('wSave').disabled=false; $('wName').select(); $('wName').focus(); } else lastRun.saved=true; saving=false; return; }
     lastRun.saved=true;
     const list=await bestList(lastRun.m); const pos=list.findIndex(r=>String(r.nombre).trim().toLowerCase()===n.toLowerCase())+1;
     const mine=list[pos-1]; const improved=mine&&Math.abs(Number(mine.tiempo)-lastRun.t)<0.011;
     $('wMsg').textContent=improved?`¡Guardado! Quedaste en el lugar ${pos} de ${list.length}.`:`Guardado. Tu mejor marca sigue siendo ${fmt2(Number(mine?mine.tiempo:lastRun.t))} (lugar ${pos}).`;
     const top=list.slice(0,10).map((r,i)=>Object.assign({pos:i+1},r)); if(pos>10&&mine) top.push(Object.assign({pos},mine));
     fillRows($('wTop'),top,{n,t:Number(mine?mine.tiempo:lastRun.t)},false,r=>showRemoteRoute(r,lastRun.m,'w')); $('wTopBox').hidden=false;
-  }catch(e){ $('wMsg').textContent=netMsg(e); $('wSave').disabled=false; }
+  }catch(e){ $('wMsg').textContent=netMsg(e); $('wSave').hidden=false; $('wSave').disabled=false; }
   saving=false;
 });
 async function loadRank(){
