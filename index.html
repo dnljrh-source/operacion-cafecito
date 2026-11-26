@@ -1384,7 +1384,7 @@ function routeMapByName(n){ for(const m of Object.values(BUILTIN)) if(m&&m.name=
 function routeColor(f,hasCap){ return (f&2)?ROUTE_COL[2]:(hasCap&&(f&1))?ROUTE_COL_CAP:ROUTE_COL[0]; }
 function drawRoute(cv,map,ruta){
   const tok={}; cv._tok=tok;
-  const L=layout(map), W=L.size.w, D=L.size.d, dpr=Math.min(2,window.devicePixelRatio||1);
+  const L=map&&map.solids?map:layout(map), W=L.size.w, D=L.size.d, dpr=Math.min(2,window.devicePixelRatio||1); // acepta el mapa o su layout ya armado
   const cssW=cv.clientWidth||cv.parentNode.clientWidth||520, cssH=Math.round(Math.min(cssW*D/W,340));
   cv.style.height=cssH+'px'; cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
   const pad=6, s=Math.min((cssW-2*pad)/W,(cssH-2*pad)/D), ox=cssW/2, oy=cssH/2, T=(x,z)=>[ox+x*s,oy+z*s];
