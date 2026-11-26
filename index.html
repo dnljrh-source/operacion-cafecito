@@ -1497,6 +1497,25 @@ function snapshot(){
   const s=JSON.stringify(E.map); if(E.undo[E.undo.length-1]!==s){ E.undo.push(s); if(E.undo.length>120) E.undo.shift(); } E.redo=[];
   $('eUndo').disabled=false; $('eRedo').disabled=true;
 }
+/* el área de construcción crece sola para contener todo lo que se dibuje fuera del borde */
+function contentBox(m){ let x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity; const add=(x,z,r)=>{ x0=Math.min(x0,x-r); x1=Math.max(x1,x+r); z0=Math.min(z0,z-r); z1=Math.max(z1,z+r); };
+  for(const it of m.items){ const T=TYPES[it.t]; if(!T) continue;
+    if(T.kind==='line'){ add(it.x0,it.z0,0); add(it.x1,it.z1,0); }
+    else if(T.kind==='rect'){ add(it.x0,it.z0,0); add(it.x1,it.z1,0); }
+    else { const [w,d]=fpOf(T.w,T.d,it.r); x0=Math.min(x0,it.x-w/2); x1=Math.max(x1,it.x+w/2); z0=Math.min(z0,it.z-d/2); z1=Math.max(z1,it.z+d/2); } }
+  const o=m.obj; add(m.start.x,m.start.z,0.4); if(o.capsule) add(o.capsule.x,o.capsule.z,0.6); o.machines.forEach(q=>add(q.x,q.z,0.7)); add(o.desk.x,o.desk.z,0.9);
+  m.bosses.forEach(b=>b.path.forEach(w=>add(w.x,w.z,0.4))); return {x0,x1,z0,z1}; }
+function growToFit(){ const m=E.map; if(!m) return false; const W=m.size.w, D=m.size.d, b=contentBox(m), eps=0.01;
+  if(b.x0>=-W/2-eps&&b.x1<=W/2+eps&&b.z0>=-D/2-eps&&b.z1<=D/2+eps) return false;
+  // borde nuevo: unión del área actual y el contenido, en metros enteros y medidas pares
+  let nx0=Math.floor(Math.min(-W/2,b.x0)), nx1=Math.ceil(Math.max(W/2,b.x1)), nz0=Math.floor(Math.min(-D/2,b.z0)), nz1=Math.ceil(Math.max(D/2,b.z1));
+  if((nx1-nx0)%2) { if(b.x0<-W/2) nx0--; else nx1++; } if((nz1-nz0)%2) { if(b.z0<-D/2) nz0--; else nz1++; }
+  if(nx1-nx0>60||nz1-nz0>60){ toast('El mapa ya está en su tamaño máximo (60 m): no puede crecer más.'); return false; }
+  const cx=(nx0+nx1)/2, cz=(nz0+nz1)/2, sx=v=>r2(v-cx), sz=v=>r2(v-cz);
+  for(const it of m.items){ if('x0' in it){ it.x0=sx(it.x0); it.x1=sx(it.x1); it.z0=sz(it.z0); it.z1=sz(it.z1); } else { it.x=sx(it.x); it.z=sz(it.z); } }
+  const mv=q=>{ if(q){ q.x=sx(q.x); q.z=sz(q.z); } }; mv(m.start); mv(m.obj.capsule); m.obj.machines.forEach(mv); mv(m.obj.desk); m.bosses.forEach(bb=>bb.path.forEach(mv));
+  m.size={w:nx1-nx0,d:nz1-nz0}; E.view.ox+=cx*E.view.s; E.view.oy+=cz*E.view.s; $('eW').value=m.size.w; $('eD').value=m.size.d;
+  toast(`El área creció a ${m.size.w} × ${m.size.d} m para que entre todo.`); return true; }
 function changed(panel){ recompute(); scheduleSave(); if(panel!==false) buildPanel(); $('eUndo').disabled=!E.undo.length; $('eRedo').disabled=!E.redo.length; draw(); }
 function scheduleSave(){ E.dirty=true; if(E.meta.status==='afinado'&&E.meta.by==='claude'){ E.meta.by='daniel'; } $('eSave').textContent='Cambios sin guardar…'; clearTimeout(E.saveT); E.saveT=setTimeout(flushSave,900); }
 function flushSave(){
@@ -1629,11 +1648,11 @@ function endDrag(e){
   const d=E.drag; E.drag=null; if(!d) return;
   if(d.type==='create'){ const a=d.a,b=d.b,t=d.tool;
     if(t.kind==='line'){ const q=lineSnap(a,b), L=Math.hypot(q.x-a.x,q.z-a.z);
-      if(L>=0.5){ snapshot(); E.map.items.push({t:t.t,x0:a.x,z0:a.z,x1:q.x,z1:q.z}); E.sel={kind:'item',i:E.map.items.length-1}; changed(); } else draw(); }
+      if(L>=0.5){ snapshot(); E.map.items.push({t:t.t,x0:a.x,z0:a.z,x1:q.x,z1:q.z}); E.sel={kind:'item',i:E.map.items.length-1}; growToFit(); changed(); } else draw(); }
     else { if(Math.abs(b.x-a.x)>=0.5&&Math.abs(b.z-a.z)>=0.5){ snapshot(); const it={t:t.t,x0:Math.min(a.x,b.x),z0:Math.min(a.z,b.z),x1:Math.max(a.x,b.x),z1:Math.max(a.z,b.z)};
-        if(t.mat) it.mat=t.mat; if(t.t==='cubiculos') it.gente=0.25; E.map.items.push(it); E.sel={kind:'item',i:E.map.items.length-1}; changed(); } else draw(); } }
-  else if(d.type==='handle'){ const o=selRef(E.sel); if(o&&'x0' in o&&TYPES[o.t].kind==='rect'){ const r=rectOf(o); Object.assign(o,{x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1}); if(r.w<0.5||r.d<0.5){ deleteSel(); toast('Quedó demasiado chico y lo borré. Deshacer lo recupera.'); } } changed(); }
-  else if(d.type==='move'&&d.snapped) changed();
+        if(t.mat) it.mat=t.mat; if(t.t==='cubiculos') it.gente=0.25; E.map.items.push(it); E.sel={kind:'item',i:E.map.items.length-1}; growToFit(); changed(); } else draw(); } }
+  else if(d.type==='handle'){ const o=selRef(E.sel); if(o&&'x0' in o&&TYPES[o.t].kind==='rect'){ const r=rectOf(o); Object.assign(o,{x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1}); if(r.w<0.5||r.d<0.5){ deleteSel(); toast('Quedó demasiado chico y lo borré. Deshacer lo recupera.'); } } growToFit(); changed(); }
+  else if(d.type==='move'&&d.snapped) growToFit(); changed();
 }
 ecan.addEventListener('pointerup',endDrag); ecan.addEventListener('pointercancel',endDrag);
 ecan.addEventListener('pointerleave',()=>{ E.hover=null; if(!E.drag) draw(); });
