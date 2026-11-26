@@ -102,6 +102,14 @@ label.f{display:grid;gap:4px;font-size:14px;color:var(--muted)}
 .rtable .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .rtable tr.me td{color:var(--accent);font-weight:600}
 .rscroll{overflow-x:auto;margin:0 0 14px}
+.routeBox{margin:0 0 14px}
+.routeBox canvas{display:block;width:100%;border-radius:10px;background:#13161c;cursor:pointer}
+.routeCap{font-size:13px;color:var(--muted);margin-top:6px;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+.routeCap b{color:#fff;font-weight:600}
+.routeCap i{display:inline-block;width:14px;height:4px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.rtable tbody tr.pick{cursor:pointer}
+.rtable tbody tr.pick:hover td{background:rgba(255,255,255,.05)}
+.rtable tbody tr.sel td{background:rgba(255,207,63,.12)}
 #ghostBadge{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);z-index:60;background:#0f766e;color:#fff;font:600 12px Rubik,sans-serif;padding:4px 12px;border-radius:999px;pointer-events:none}
 #ghostBadge[hidden]{display:none}
 body:not(.playing) #ghostBadge{display:none}
@@ -245,6 +253,7 @@ body.editing #editor{display:grid}
       <div class="stat"><small>Veces que te vieron</small><b id="wSpot">0</b></div>
       <div class="stat"><small>Mejor tiempo</small><b id="wBest">–</b></div>
     </div>
+    <div class="routeBox" id="wRouteBox" hidden><canvas id="wRoute" aria-label="Plano con el recorrido"></canvas><div class="routeCap" id="wRouteCap"></div></div>
     <div class="scorebox" id="saveBox" hidden>
       <label class="f">Tu nombre para el ranking<input id="wName" maxlength="20" placeholder="Ej: Pedro" autocomplete="nickname"></label>
       <div class="row"><button id="wSave" class="sm">Guardar en el ranking</button><span id="wMsg" role="status"></span></div>
@@ -258,9 +267,10 @@ body.editing #editor{display:grid}
 <div id="rank" class="screen">
   <div class="card wide">
     <h2 class="big">Ranking</h2>
-    <p class="brief">Los 10 mejores tiempos de cada mapa. Cuenta solo el mejor de cada persona.</p>
+    <p class="brief">Los 10 mejores tiempos de cada mapa. Cuenta solo el mejor de cada persona. Toca una fila para ver su recorrido.</p>
     <label class="msel">Mapa <select id="rMap" aria-label="Mapa del ranking"></select></label>
     <div class="rscroll"><table class="rtable"><thead><tr><th class="n">#</th><th>Nombre</th><th class="n">Tiempo</th><th class="n">Visto</th><th>Nota</th><th>Fecha</th></tr></thead><tbody id="rBody"></tbody></table></div>
+    <div class="routeBox" id="rRouteBox" hidden><canvas id="rRoute" aria-label="Plano con el recorrido"></canvas><div class="routeCap" id="rRouteCap"></div></div>
     <p id="rMsg" role="status" style="margin:0 0 14px"></p>
     <div class="row"><button id="rRefresh" class="sm">Actualizar</button><button id="rBack" class="ghost sm">Volver</button></div>
   </div>
@@ -1111,7 +1121,7 @@ function createEngine(){
     game.overlay=true; showScreen('win');
     try{ const o=LV.obj, sp=LV.start, hy=(a,b)=>Math.max(0,Math.hypot(a.x-b.x,a.z-b.z)-1.9);
       const lb=Math.min(...o.machines.map(m=>((o.capsule?hy(sp,o.capsule)+hy(o.capsule,m):hy(sp,m))/SPEED.run)+BREW_TIME+hy(m,LV.start)/SPEED.walk));
-      document.dispatchEvent(new CustomEvent('cafe-win',{detail:{m:current.name||'Mapa',t,s:game.spotted,st:game.spotted===0&&game.maxS<0.3?3:game.spotted===0?2:1,lb,fromEditor:current.fromEditor,ghost:ghostUsed,seq:run.seq,ruta:run.ruta.slice()}})); }catch(e){ console.error(e); } }
+      document.dispatchEvent(new CustomEvent('cafe-win',{detail:{m:current.name||'Mapa',t,s:game.spotted,st:game.spotted===0&&game.maxS<0.3?3:game.spotted===0?2:1,lb,fromEditor:current.fromEditor,ghost:ghostUsed,seq:run.seq,ruta:run.ruta.slice(),map:LV}})); }catch(e){ console.error(e); } }
   $('retryBtn').addEventListener('click',restart); $('againBtn').addEventListener('click',restart); $('restartBtn').addEventListener('click',restart); $('resumeBtn').addEventListener('click',resume);
   let currentTarget=null;
   window.addEventListener('keydown',e=>{
@@ -1316,17 +1326,81 @@ async function supa(path,opts){
   const txt=await r.text(); return txt?JSON.parse(txt):null;
 }
 async function bestList(mapa){
-  const rows=await supa(SUPA.table+'?select=nombre,tiempo,visto,estrellas,creado&mapa=eq.'+encodeURIComponent(mapa)+'&order=tiempo.asc,estrellas.desc,visto.asc,creado.asc&limit=1000');
+  const rows=await supa(SUPA.table+'?select=id,nombre,tiempo,visto,estrellas,creado&mapa=eq.'+encodeURIComponent(mapa)+'&order=tiempo.asc,estrellas.desc,visto.asc,creado.asc&limit=1000');
   const seen=new Set(), out=[]; for(const r of (Array.isArray(rows)?rows:[])){ const k=String(r.nombre||'').trim().toLowerCase(); if(!k||seen.has(k)) continue; seen.add(k); out.push(r); } return out;
 }
 const netMsg=e=>e&&e.status>=400&&e.status<500?(e.server||'El ranking rechazó el puntaje.'):'No se pudo conectar con el ranking. Revisa tu conexión e intenta de nuevo.';
-function fillRows(tbody,rows,me,withDate){
+function fillRows(tbody,rows,me,withDate,onPick){
   tbody.textContent='';
-  rows.forEach((r,i)=>{ const tr=document.createElement('tr'); if(me&&String(r.nombre).trim().toLowerCase()===me.n.toLowerCase()&&Math.abs(Number(r.tiempo)-me.t)<0.011) tr.className='me';
+  rows.forEach((r,i)=>{ const tr=document.createElement('tr');
+    if(onPick&&r.id!=null){ tr.classList.add('pick'); tr.tabIndex=0; const go=()=>{ [...tbody.children].forEach(x=>x.classList.remove('sel')); tr.classList.add('sel'); onPick(r); };
+      tr.addEventListener('click',go); tr.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }); } if(me&&String(r.nombre).trim().toLowerCase()===me.n.toLowerCase()&&Math.abs(Number(r.tiempo)-me.t)<0.011) tr.classList.add('me');
     const td=(t,c)=>{ const x=document.createElement('td'); if(c) x.className=c; x.textContent=t; tr.appendChild(x); };
     td(String(r.pos||i+1),'n'); td(String(r.nombre||'')); td(fmt2(Number(r.tiempo)||0),'n'); td(String(r.visto??0),'n'); td('★'.repeat(clamp(Number(r.estrellas)||1,1,3)));
     if(withDate) td(r.creado?new Date(r.creado).toLocaleDateString('es-CL',{day:'numeric',month:'short'}):'');
     tbody.appendChild(tr); });
+}
+/* ---- recorridos: plano del mapa + camino ---- */
+const ROUTE_COL=['#ffcf3f','#ffcf3f','#ff7a59'], ROUTE_COL_CAP='#ffa63f';
+let lastMap=null;
+function routeMapByName(n){ for(const m of Object.values(BUILTIN)) if(m&&m.name===n) return m; for(const [,d] of sortedDocs()) if(d.name===n) return d.map; return null; }
+function routeColor(f,hasCap){ return (f&2)?ROUTE_COL[2]:(hasCap&&(f&1))?ROUTE_COL_CAP:ROUTE_COL[0]; }
+function drawRoute(cv,map,ruta){
+  const tok={}; cv._tok=tok;
+  const L=layout(map), W=L.size.w, D=L.size.d, dpr=Math.min(2,window.devicePixelRatio||1);
+  const cssW=cv.clientWidth||cv.parentNode.clientWidth||520, cssH=Math.round(Math.min(cssW*D/W,340));
+  cv.style.height=cssH+'px'; cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  const pad=6, s=Math.min((cssW-2*pad)/W,(cssH-2*pad)/D), ox=cssW/2, oy=cssH/2, T=(x,z)=>[ox+x*s,oy+z*s];
+  // plano (se dibuja una vez)
+  const bg=document.createElement('canvas'); bg.width=cv.width; bg.height=cv.height; const b=bg.getContext('2d'); b.scale(dpr,dpr);
+  b.fillStyle='#13161c'; b.fillRect(0,0,cssW,cssH);
+  const [fx,fy]=T(-W/2,-D/2); b.fillStyle='#5d6e80'; b.fillRect(fx,fy,W*s,D*s);
+  for(const p of L.props) if(p.k==='floor'){ b.fillStyle=FLOOR_COL[p.mat]||'#ccc'; const [x,y]=T(p.x-p.w/2,p.z-p.d/2); b.fillRect(x,y,p.w*s,p.d*s); }
+  for(const so of [...L.solids].sort((a,c)=>a.h-c.h)){
+    if(so.seg){ const [ax,ay]=T(so.ax,so.az), [bx,by]=T(so.bx,so.bz); b.strokeStyle=SOLID_COL[so.c]||'#888'; b.lineWidth=Math.max(1.5,so.r*2*s); b.beginPath(); b.moveTo(ax,ay); b.lineTo(bx,by); b.stroke(); continue; }
+    if(so.c==='person') continue;
+    const [x,y]=T(so.x0,so.z0), w=(so.x1-so.x0)*s, h=(so.z1-so.z0)*s; b.fillStyle=SOLID_COL[so.c]||'#888';
+    if(so.c==='plant'){ b.beginPath(); b.arc(x+w/2,y+h/2,Math.max(1.5,Math.min(w,h)/2),0,TAU); b.fill(); continue; }
+    b.fillRect(x,y,Math.max(1,w),Math.max(1,h)); }
+  const o=map.obj, mk=(q,txt)=>{ const [x,y]=T(q.x,q.z), r=Math.max(7,0.36*s); b.fillStyle='#5fd3c3'; b.beginPath(); b.arc(x,y,r,0,TAU); b.fill();
+    b.fillStyle='#0b2b28'; b.font=`800 ${Math.round(r*1.1)}px Rubik, sans-serif`; b.textAlign='center'; b.textBaseline='middle'; b.fillText(txt,x,y+1); };
+  if(o.capsule) mk(o.capsule,'C'); o.machines.forEach((q,i)=>mk(q,o.machines.length>1?String(i+1):'☕'));
+  { const [x,y]=T(map.start.x,map.start.z), r=Math.max(7,0.36*s); b.strokeStyle='#5fd3c3'; b.lineWidth=2.5; b.strokeRect(x-r,y-r,2*r,2*r); }
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  const R=(Array.isArray(ruta)?ruta:[]).filter(p=>Array.isArray(p)&&p.length>=3&&isFinite(p[0])&&isFinite(p[1])&&isFinite(p[2]));
+  const hasCap=!!o.capsule, end=R.length?R[R.length-1][0]:0, speed=Math.max(3,end/7);
+  function frameAt(tNow){
+    ctx.clearRect(0,0,cssW,cssH); ctx.drawImage(bg,0,0,cssW,cssH);
+    if(R.length<2) return;
+    ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineWidth=Math.max(2,0.14*s);
+    let head=null;
+    for(let i=1;i<R.length;i++){ const a=R[i-1], c=R[i]; if(a[0]>tNow) break;
+      let [x1,y1]=T(c[1],c[2]); if(c[0]>tNow){ const k=(tNow-a[0])/Math.max(1e-6,c[0]-a[0]); [x1,y1]=T(a[1]+(c[1]-a[1])*k,a[2]+(c[2]-a[2])*k); }
+      const [x0,y0]=T(a[1],a[2]); ctx.strokeStyle=routeColor(c[3]|0,hasCap); ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke(); head=[x1,y1]; }
+    if(head){ ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(head[0],head[1],Math.max(4,0.22*s),0,TAU); ctx.fill(); ctx.strokeStyle='#13161c'; ctx.lineWidth=2; ctx.stroke(); }
+  }
+  function play(){ const t0=performance.now(); const my={}; cv._tok=my;
+    (function step(now){ if(cv._tok!==my) return; const tNow=Math.min(end,(now-t0)/1000*speed); frameAt(tNow); if(tNow<end) requestAnimationFrame(step); })(t0); }
+  cv.onclick=play; play();
+  return R.length>=2;
+}
+function routeLegend(hasCap){ return `<span><i style="background:${ROUTE_COL[0]}"></i>${hasCap?'buscando la cápsula':'yendo por el café'}</span>`+(hasCap?`<span><i style="background:${ROUTE_COL_CAP}"></i>con la cápsula</span>`:'')+`<span><i style="background:${ROUTE_COL[2]}"></i>con el café</span><span>· toca el plano para repetir</span>`; }
+function showRoute(w,map,ruta,title){
+  const box=$(w+'RouteBox'), cap=$(w+'RouteCap');
+  if(!map||!Array.isArray(ruta)||ruta.length<2){ box.hidden=true; return; }
+  box.hidden=false; cap.innerHTML='';
+  const t=document.createElement('b'); t.textContent=title; cap.appendChild(t); cap.insertAdjacentHTML('beforeend',routeLegend(!!map.obj.capsule));
+  requestAnimationFrame(()=>drawRoute($(w+'Route'),map,ruta));
+}
+async function showRemoteRoute(r,mapName,w){
+  const map=(w==='w'&&lastMap&&lastMap.name===mapName)?lastMap:routeMapByName(mapName);
+  const box=$(w+'RouteBox'), cap=$(w+'RouteCap'); box.hidden=false; cap.textContent='Cargando recorrido…';
+  try{ const rows=await supa(SUPA.table+'?select=ruta&id=eq.'+encodeURIComponent(r.id)); const ruta=rows&&rows[0]&&rows[0].ruta;
+    const title=`Recorrido de ${String(r.nombre||'')} · ${fmt2(Number(r.tiempo)||0)}`;
+    if(!map){ cap.textContent='Este mapa no está disponible en este navegador.'; $(w+'Route').style.height='0px'; return; }
+    if(!Array.isArray(ruta)||ruta.length<2){ cap.textContent=`${String(r.nombre||'')}: este puntaje es de antes de que se guardaran los recorridos.`; $(w+'Route').style.height='0px'; return; }
+    showRoute(w,map,ruta,title);
+  }catch(e){ cap.textContent=netMsg(e); }
 }
 let myName=''; try{ myName=localStorage.getItem('cafecito-nombre')||''; }catch(e){}
 let lastRun=null, saving=false;
@@ -1341,7 +1415,8 @@ document.addEventListener('cafe-start',ev=>{
     .catch(e=>{ console.error(e); r.err=e&&e.status>=400&&e.status<500?(e.server||'No se pudo registrar la partida.'):'Sin conexión al empezar: esta partida no se puede guardar.'; });
 });
 document.addEventListener('cafe-win',ev=>{
-  const d=ev.detail; lastRun={m:d.m,t:Math.round(d.t*100)/100,s:d.s,st:d.st,lb:d.lb,seq:d.seq,ruta:d.ruta,saved:false};
+  const d=ev.detail; lastMap=d.map||null; showRoute('w',lastMap,d.ruta,'Tu recorrido');
+  lastRun={m:d.m,t:Math.round(d.t*100)/100,s:d.s,st:d.st,lb:d.lb,seq:d.seq,ruta:d.ruta,saved:false};
   const box=$('saveBox'); box.hidden=!rankingOn||d.fromEditor||d.ghost; if(box.hidden) return;
   $('wName').value=myName; $('wSave').disabled=false; $('wTopBox').hidden=true;
   $('wMsg').textContent=lastRun.t<Math.max(8,lastRun.lb*0.97)?'Ese tiempo es más rápido de lo que permite el mapa, así que no se puede guardar.':'¿Quieres anotarte?';
@@ -1365,14 +1440,14 @@ $('wSave').addEventListener('click',async()=>{
     const mine=list[pos-1]; const improved=mine&&Math.abs(Number(mine.tiempo)-lastRun.t)<0.011;
     $('wMsg').textContent=improved?`¡Guardado! Quedaste en el lugar ${pos} de ${list.length}.`:`Guardado. Tu mejor marca sigue siendo ${fmt2(Number(mine?mine.tiempo:lastRun.t))} (lugar ${pos}).`;
     const top=list.slice(0,10).map((r,i)=>Object.assign({pos:i+1},r)); if(pos>10&&mine) top.push(Object.assign({pos},mine));
-    fillRows($('wTop'),top,{n,t:Number(mine?mine.tiempo:lastRun.t)},false); $('wTopBox').hidden=false;
+    fillRows($('wTop'),top,{n,t:Number(mine?mine.tiempo:lastRun.t)},false,r=>showRemoteRoute(r,lastRun.m,'w')); $('wTopBox').hidden=false;
   }catch(e){ $('wMsg').textContent=netMsg(e); $('wSave').disabled=false; }
   saving=false;
 });
 async function loadRank(){
   const m=$('rMap').value; $('rMsg').textContent='Cargando…'; $('rBody').textContent='';
-  try{ const list=await bestList(m); fillRows($('rBody'),list.slice(0,10),myName?{n:myName,t:-1}:null,true);
-    if(myName){ const pos=list.findIndex(r=>String(r.nombre).trim().toLowerCase()===myName.toLowerCase())+1; [...$('rBody').children].forEach((tr,i)=>{ if(i===pos-1) tr.className='me'; }); }
+  try{ const list=await bestList(m); fillRows($('rBody'),list.slice(0,10),myName?{n:myName,t:-1}:null,true,r=>showRemoteRoute(r,m,'r')); $('rRouteBox').hidden=true;
+    if(myName){ const pos=list.findIndex(r=>String(r.nombre).trim().toLowerCase()===myName.toLowerCase())+1; [...$('rBody').children].forEach((tr,i)=>{ if(i===pos-1) tr.classList.add('me'); }); }
     $('rMsg').textContent=list.length?`${list.length} jugador${list.length===1?'':'es'} en este mapa.`:'Todavía nadie se anota en este mapa. ¡Sé el primero!'; }
   catch(e){ $('rMsg').textContent=netMsg(e); }
 }
