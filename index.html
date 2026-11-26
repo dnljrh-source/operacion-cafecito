@@ -952,7 +952,8 @@ function createEngine(){
         box(BACK,len,0.62,0.18,0,0.58,-dep/2+0.09,g); for(const sd of [-1,1]) box(BACK,arm,0.58,dep,sd*(len/2-arm/2),0.37,0,g);
         for(const sx of [-1,1]) for(const sz of [-1,1]) cyl(0x2b1d14,0.06,0.06,0.06,sx*(len/2-0.08),0.03,sz*(dep/2-0.08),g,true); break; }
       case 'puerta_real': case 'salida': { const ex=p.k==='salida', DW=ex?1.2:0.92, g=group(p.x,p.z,p.yaw), FR=ex?0x5a6068:0x4c5158;
-        for(const sd of [-1,1]) box(FR,0.06,2.26,0.16,sd*(DW/2+0.03),1.13,0,g); box(FR,DW+0.12,0.08,0.16,0,2.24,0,g);
+        for(const sd of [-1,1]) box(FR,0.06,3.2,0.16,sd*(DW/2+0.03),1.6,0,g); box(FR,DW+0.12,0.08,0.16,0,2.24,0,g); box(FR,DW+0.12,0.05,0.16,0,3.175,0,g,true);
+        { const m=new THREE.Mesh(BOX,own(new THREE.MeshBasicMaterial({color:0xbfe6ff,transparent:true,opacity:0.22,depthWrite:false}))); m.scale.set(DW,0.9,0.03); m.position.set(0,2.73,0); m.renderOrder=3; g.add(m); } // vidrio sobre la puerta hasta el cielo
         const piv=new THREE.Group(); piv.position.set(-DW/2,0,0); g.add(piv);
         box(ex?0xa9b1b8:0xc49a6c,DW-0.01,2.17,0.05,DW/2,1.09,0,piv);
         if(ex){ for(const sz of [-1,1]){ box(0xd32f2f,DW*0.78,0.07,0.06,DW/2,1.02,sz*0.06,piv,true); box(0x8a9096,0.05,0.12,0.06,DW*0.14,1.02,sz*0.05,piv,true); box(0x8a9096,0.05,0.12,0.06,DW*0.86,1.02,sz*0.05,piv,true); }
