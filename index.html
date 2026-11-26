@@ -196,7 +196,7 @@ body.editing #editor{display:grid}
   <div class="card">
     <div class="brand">
       <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><rect x="10" y="20" width="34" height="34" rx="6" fill="#f4f1ea"/><rect x="10" y="30" width="34" height="7" fill="#e0533d"/><path d="M44 27h5a7 7 0 0 1 0 14h-5" fill="none" stroke="#f4f1ea" stroke-width="5"/><path d="M20 15c0-4 4-4 4-8M30 15c0-4 4-4 4-8" stroke="#ffcf3f" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
-      <div><h1>Operación Cafecito</h1><p class="sub">Piso 4, 10:47 am</p></div>
+      <div><h1>Operación Cafecito</h1><p class="sub">Piso 9, 10:47 am</p></div>
     </div>
     <p class="brief">Llevas desde las ocho sin café. Los jefes rondan el piso y cualquier pausa “no planificada” termina en una reunión de 45 minutos. Consigue tu café y vuelve a tu escritorio sin que nadie te pille.</p>
     <ul class="keys">
@@ -206,6 +206,7 @@ body.editing #editor{display:grid}
       <li><kbd>C</kbd> agacharse / pararse</li>
       <li><kbd>E</kbd> interactuar</li>
       <li><kbd>Esc</kbd> pausa</li>
+      <li><kbd>R</kbd> reiniciar</li>
     </ul>
     <p class="brief" style="font-size:15px;color:var(--muted)">El cono en el piso es lo que ve cada jefe; la parte intensa te ve incluso agachado. Agachado, los tabiques te tapan. Con el café lleno no puedes correr.</p>
     <label class="msel">Mapa <select id="mapPick" aria-label="Mapa a jugar"></select></label>
@@ -219,7 +220,7 @@ body.editing #editor{display:grid}
   <div class="card">
     <h2 class="big">Pausa</h2>
     <p class="brief">Haz como que estás leyendo un correo importante.</p>
-    <div class="row"><button id="resumeBtn">Continuar</button><button id="restartBtn" class="ghost">Reiniciar</button><button class="ghost toEditor">Volver al editor</button><button class="ghost toMenu">Menú</button></div>
+    <div class="row"><button id="resumeBtn">Continuar</button><button id="restartBtn" class="ghost">Reiniciar <kbd>R</kbd></button><button class="ghost toEditor">Volver al editor</button><button class="ghost toMenu">Menú</button></div>
   </div>
 </div>
 <div id="caught" class="screen">
@@ -998,8 +999,9 @@ function createEngine(){
     if(game.state==='play'){
       if(e.code==='KeyC'&&!e.repeat) P.crouch=!P.crouch;
       if(e.code==='KeyE'&&!e.repeat){ const it=currentTarget; if(it&&!it.hold&&it.ready()) it.act(); }
+      if(e.code==='KeyR'&&!e.repeat){ restart(); return; }
       if((e.code==='Escape'&&dragMode)||e.code==='KeyP') pause();
-    } else if(game.state==='pause'){ if(e.code==='KeyP'&&!e.repeat) resume(); }
+    } else if(game.state==='pause'){ if(e.code==='KeyP'&&!e.repeat) resume(); else if(e.code==='KeyR'&&!e.repeat) restart(); }
     else if((game.state==='caught'||game.state==='win')&&game.overlay){ if(e.code==='KeyR'&&!e.repeat) restart(); }
   });
   window.addEventListener('keyup',e=>{ keys[e.code]=false; });
