@@ -958,7 +958,7 @@ function createEngine(){
         for(const sd of [-1,1]) box(FR,0.06,2.26,0.16,sd*(DW/2+0.03),1.13,0,g); box(FR,DW+0.12,0.08,0.16,0,2.24,0,g);
         const piv=new THREE.Group(); piv.position.set(-DW/2,0,0); g.add(piv);
         box(ex?0xa9b1b8:0xc49a6c,DW-0.01,2.17,0.05,DW/2,1.09,0,piv);
-        if(ex){ for(const sz of [-1,1]){ box(0xd32f2f,DW*0.78,0.07,0.06,DW/2,1.02,sz*0.06,piv,true); box(0x8a9096,0.05,0.12,0.06,DW*0.14,1.02,sz*0.05,piv,true); box(0x8a9096,0.05,0.12,0.06,DW*0.86,1.02,sz*0.05,piv,true); }
+        if(ex){ for(const sz of [1]){ box(0xd32f2f,DW*0.78,0.07,0.06,DW/2,1.02,sz*0.06,piv,true); box(0x8a9096,0.05,0.12,0.06,DW*0.14,1.02,sz*0.05,piv,true); box(0x8a9096,0.05,0.12,0.06,DW*0.86,1.02,sz*0.05,piv,true); }
           const c=document.createElement('canvas'); c.width=256; c.height=96; const q=c.getContext('2d'); q.fillStyle='#1f9d55'; q.fillRect(0,0,256,96); q.fillStyle='#fff'; q.font='800 52px Rubik, Arial, sans-serif'; q.textAlign='center'; q.textBaseline='middle'; q.fillText('SALIDA',128,50);
           const tx=new THREE.CanvasTexture(c), m=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.23),own(new THREE.MeshBasicMaterial({map:tx}))); m.position.set(0,2.5,0.155); g.add(m); // letrero solo por el frente (hacia donde mira en el editor)
           box(0x30353b,0.66,0.27,0.05,0,2.5,0.125,g,true);
@@ -1113,8 +1113,9 @@ function createEngine(){
     inter=[];
     for(const d of doors){ d.solid=solids[d.sid];
       if(!d.ex) inter.push({x:d.x,z:d.z,r:Math.max(1.7,(d.len||0)/2+0.9),prompt:()=>d.open?'Cerrar la puerta':'Abrir la puerta',ready:()=>true,act(){ setDoor(d,!d.open,P.x,P.z); }});
-      else inter.push({x:d.x,z:d.z,r:1.7,hold:true,prompt:()=>d.open?null:'Mantén E para abrir la puerta de emergencia (suena la alarma)',ready:()=>!d.open,
-        holdStep(dt){ d.held=true; d.hold=Math.min(1,d.hold+dt/2); if(Math.floor((d.hold-dt/2)*6)!==Math.floor(d.hold*6)) sfx.brew(); if(d.hold>=1) openExit(d); },progress:()=>d.hold}); }
+      else { const front=()=>((P.x-d.x)*Math.sin(d.yaw)+(P.z-d.z)*Math.cos(d.yaw))>0; // solo se abre desde el lado del letrero SALIDA
+        inter.push({x:d.x,z:d.z,r:1.7,hold:true,prompt:()=>d.open?null:front()?'Mantén E para abrir la puerta de emergencia (suena la alarma)':'Esta puerta solo se abre desde el otro lado',ready:()=>!d.open&&front(),
+        holdStep(dt){ d.held=true; d.hold=Math.min(1,d.hold+dt/2); if(Math.floor((d.hold-dt/2)*6)!==Math.floor(d.hold*6)) sfx.brew(); if(d.hold>=1) openExit(d); },progress:()=>d.hold}); } }
     if(o.capsule) inter.push({x:o.capsule.x,z:o.capsule.z,r:1.9,prompt:()=>P.capsule||P.coffee?null:'Tomar una cápsula de café',ready:()=>!P.capsule&&!P.coffee,
       act(){ P.capsule=true; rec(); sfx.pick(); toast(ms.length>1&&found<0?'Cápsula en mano. Ahora, encuentra la cafetera con café.':'Cápsula en mano. Ahora, a la cafetera.'); }});
     ms.forEach((q,i)=>inter.push({x:q.x,z:q.z,r:1.9,get hold(){ return found===i; },
