@@ -103,6 +103,10 @@ label.f{display:grid;gap:4px;font-size:14px;color:var(--muted)}
 .rtable tr.me td{color:var(--accent);font-weight:600}
 .rscroll{overflow-x:auto;margin:0 0 14px}
 .routeBox{margin:0 0 14px}
+.daily-only{display:none}
+body.page-daily .daily-only{display:block;color:#ffcf3f;font-weight:600}
+body.page-daily #mapPick,body.page-daily label.msel,body.page-daily #editBtn{display:none!important}
+body.page-gestor #eMap,body.page-gestor #eNew,body.page-gestor #eImport{display:none}
 #dailyCal{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(8,10,14,.6)}
 #dailyCal[hidden]{display:none}
 #dailyCal .dcard{width:min(460px,94vw);background:#1b1f27;border-radius:16px;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.5);color:#e8ecf1}
@@ -229,6 +233,7 @@ body.editing #editor{display:grid}
       <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><rect x="10" y="20" width="34" height="34" rx="6" fill="#f4f1ea"/><rect x="10" y="30" width="34" height="7" fill="#e0533d"/><path d="M44 27h5a7 7 0 0 1 0 14h-5" fill="none" stroke="#f4f1ea" stroke-width="5"/><path d="M20 15c0-4 4-4 4-8M30 15c0-4 4-4 4-8" stroke="#ffcf3f" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
       <div><h1>Operación Cafecito</h1><p class="sub">Piso 9, 10:47 am</p></div>
     </div>
+    <p class="brief daily-only" id="dailyHead">Cargando el daily…</p>
     <p class="brief">Llevas desde las ocho sin café. Los jefes rondan el piso y cualquier pausa “no planificada” termina en una reunión de 45 minutos. Consigue tu café y vuelve a tu escritorio sin que nadie te pille.</p>
     <ul class="keys">
       <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverse</li>
@@ -487,6 +492,8 @@ const ETAPA3={"v":1,"name":"Etapa 3 · Piso 9","estilo":"loft","size":{"w":46,"d
 // Etapas en prueba: solo aparecen en dev. Para publicar una, sácala de esta lista.
 const SOLO_DEV={etapa3:ETAPA3};
 const ES_PROD=['operacion-cafecito.pages.dev','dnljrh-source.github.io'].includes(location.hostname);
+// páginas: / (etapas), /daily (solo el daily y su historial), /gestor (programar los días; solo dev)
+const PAGE=(()=>{ const p=location.pathname.replace(/\/+$/,'').toLowerCase(); return p.endsWith('/gestor')?'gestor':p.endsWith('/daily')?'daily':'juego'; })();
 const EDITOR_ON=!ES_PROD; // el editor de mapas no existe en prod
 const BUILTIN=Object.assign({original:ORIGINAL,etapa2:ETAPA2},ES_PROD?{}:SOLO_DEV);
 const isBuiltin=id=>Object.prototype.hasOwnProperty.call(BUILTIN,id);
@@ -722,8 +729,10 @@ const newId=()=>'m'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toStri
 const hoyCLg=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago'}).format(new Date());
 var DAILY=null; // daily de hoy: {fecha, dd, name}
 const DAILY_PFX='Daily · ';
-function dailyMapFrom(dd){ if(!dd||!dd.config||!BUILTIN[dd.base]) return null; const m=clone(BUILTIN[dd.base]), c=dd.config;
-  m.start=Object.assign({},m.start,c.start||{}); if(Array.isArray(c.bosses)) m.bosses=c.bosses; const out=sanitizeMap(m); out.name=DAILY_PFX+dd.fecha; return out; }
+function dailyMapFrom(dd){ if(!dd||!dd.config) return null; const c=dd.config; let m;
+  if(c.map&&typeof c.map==='object') m=clone(c.map); else { if(!BUILTIN[dd.base]) return null; m=clone(BUILTIN[dd.base]); m.start=Object.assign({},m.start,c.start||{}); if(Array.isArray(c.bosses)) m.bosses=c.bosses; }
+  const out=sanitizeMap(m); out.name=DAILY_PFX+dd.fecha; return out; }
+const dailyOk=()=>!!(DAILY&&dailyMapFrom(DAILY.dd));
 function mapById(id){ if(id==='daily'){ const m=DAILY&&dailyMapFrom(DAILY.dd); return m?{name:m.name,map:m,readonly:true}:null; } if(isBuiltin(id)) return {name:BUILTIN[id].name,map:BUILTIN[id],readonly:true}; const d=Store.docs.get(id); return d?{name:d.name,map:d.map,doc:d}:null; }
 
 /* ================= modal ================= */
@@ -1457,17 +1466,17 @@ function createEngine(){
 function fillMapSelect(sel,selected,includeOriginal){
   sel.textContent='';
   const add=(v,t)=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; sel.appendChild(o); };
-  if(includeOriginal&&sel.id==='mapPick'&&DAILY&&BUILTIN[DAILY.dd.base]) add('daily','☀ Daily de hoy');
+  if(sel.id==='mapPick'&&PAGE==='daily'){ if(dailyOk()) add('daily','☀ Daily de hoy'); sel.value='daily'; return; }
   if(includeOriginal) for(const k of Object.keys(BUILTIN)) add(k,BUILTIN[k].name+(sel.id==='eMap'?(cloudEdit()?' (oficial)':' (solo lectura)'):''));
   if(EDITOR_ON) for(const [id,d] of sortedDocs()) add(id,d.name+(d.status==='afinado'?' · afinado':d.status==='para-afinar'?' · para afinar':''));
   if([...sel.options].some(o=>o.value===selected)) sel.value=selected;
 }
-let menuPick='original';
+let menuPick=PAGE==='daily'?'daily':'original';
 function refreshMenu(){ fillMapSelect($('mapPick'),menuPick,true); menuPick=$('mapPick').value; }
 function showMenu(){
   document.body.classList.remove('editing'); if(engine){ engine.suspend(false); engine.toMenu(); }
   refreshMenu(); const m=mapById(menuPick)||mapById('original'); if(engine) engine.load(m.map,menuPick,m.name);
-  showScreen('menu'); if(rankingOn&&typeof loadDaily==='function'&&(!DAILY||DAILY.fecha!==hoyCLg())){ delete dailyCache.hoy; loadDaily(); }
+  showScreen('menu'); if(PAGE==='daily'&&rankingOn&&typeof loadDaily==='function'&&(!DAILY||DAILY.fecha!==hoyCLg())){ delete dailyCache.hoy; loadDaily(); }
 }
 $('mapPick').addEventListener('change',()=>{ menuPick=$('mapPick').value; const m=mapById(menuPick); if(m&&engine) engine.load(m.map,menuPick,m.name); });
 $('startBtn').addEventListener('click',()=>{ if(!engine) return; if(rankingOn&&!myName){ askName(()=>$('startBtn').click()); return; } const m=mapById(menuPick)||mapById('original'); engine.start(m.map,menuPick,{name:m.name,onExit:w=>{ if(w==='editor') openEditor(menuPick); else showMenu(); }}); });
@@ -1488,8 +1497,12 @@ const dailyCache={};
 async function fetchDaily(fecha){ const k=fecha||'hoy'; if(dailyCache[k]) return dailyCache[k];
   const dd=await supa('rpc/obtener_daily',{method:'POST',body:JSON.stringify(fecha?{p_fecha:fecha}:{})}); if(!dd||!dd.config) return null;
   const r={fecha:dd.fecha,dd,name:DAILY_PFX+dd.fecha}; dailyCache[k]=r; dailyCache[dd.fecha]=r; return r; }
-async function loadDaily(){ try{ DAILY=await fetchDaily(null); }catch(e){ console.error(e); DAILY=null; } if(DAILY&&BUILTIN[DAILY.dd.base]&&!document.body.classList.contains('playing')&&!document.body.classList.contains('editing')){ try{ refreshMenu(); }catch(e){} } }
-if(rankingOn) setTimeout(loadDaily,0);
+async function loadDaily(){ try{ DAILY=await fetchDaily(null); }catch(e){ console.error(e); DAILY=null; } if(PAGE==='daily'&&!document.body.classList.contains('playing')){ try{ dailyMenu(); }catch(e){ console.error(e); } } }
+if(rankingOn&&PAGE!=='juego') setTimeout(loadDaily,0);
+// página /daily: el menú muestra solo el daily de hoy
+function dailyMenu(){ const ok=dailyOk(); $('startBtn').disabled=!ok||!engine;
+  $('dailyHead').textContent=ok?'Daily de hoy · '+new Date(DAILY.fecha+'T12:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'}):'Hoy no hay daily programado. Vuelve más tarde.';
+  if(ok&&engine&&document.body.classList.contains('page-daily')&&!document.body.classList.contains('playing')){ menuPick='daily'; const m=mapById('daily'); engine.load(m.map,'daily',m.name); } }
 /* DEV: las etapas oficiales se editan directo y se guardan en la nube (tabla mapas_dev). Prod no lee esta tabla. */
 const BUILTIN_NAME=Object.fromEntries(Object.entries(BUILTIN).map(([k,m])=>[k,m.name]));
 function cloudEdit(){ return typeof ENV!=='undefined'&&ENV==='dev'; }
@@ -1658,11 +1671,11 @@ async function loadRank(){
 }
 if(rankingOn){
   $('rankBtn').hidden=false;
-  $('rankBtn').addEventListener('click',async()=>{ const sel=$('rMap'), names=[...new Set([...(DAILY&&BUILTIN[DAILY.dd.base]?[DAILY.name]:[]),...Object.values(BUILTIN).map(b=>b.name),...sortedDocs().map(([,d])=>d.name)])];
+  $('rankBtn').addEventListener('click',async()=>{ const sel=$('rMap'), names=PAGE==='daily'?(dailyOk()?[DAILY.name]:[]):[...new Set([...Object.values(BUILTIN).map(b=>b.name),...sortedDocs().map(([,d])=>d.name)])];
     const label=n=>n.startsWith(DAILY_PFX)?(DAILY&&n===DAILY.name?'☀ Daily de hoy':'Daily del '+new Date(n.slice(DAILY_PFX.length)+'T12:00').toLocaleDateString('es-CL',{day:'numeric',month:'short'})):n;
     const fill=()=>{ const v=sel.value; sel.textContent=''; for(const n of names){ const o=document.createElement('option'); o.value=n; o.textContent=label(n); sel.appendChild(o); } if(v&&names.includes(v)) sel.value=v; };
     fill(); const cur=mapById(menuPick); if(cur&&names.includes(cur.name)) sel.value=cur.name; showScreen('rank'); loadRank();
-    if(DAILY&&BUILTIN[DAILY.dd.base]){ try{ const rows=await supa(SUPA.table+'?select=mapa&mapa=like.Daily*&order=creado.desc&limit=500')||[]; let add=false;
+    if(PAGE==='daily'){ try{ const rows=await supa(SUPA.table+'?select=mapa&mapa=like.Daily*&order=creado.desc&limit=500')||[]; let add=false;
       for(const r of rows) if(r.mapa&&!names.includes(r.mapa)){ names.push(r.mapa); add=true; } if(add) fill(); }catch(e){} } });
   $('rMap').addEventListener('change',loadRank); $('rRefresh').addEventListener('click',loadRank); $('rBack').addEventListener('click',()=>showScreen('menu'));
 }
@@ -1700,7 +1713,7 @@ let cw=0, ch=0;
   for(const t of TOOLS){ if(t.g!==g){ g=t.g; const h=document.createElement('h3'); h.textContent=g; box.appendChild(h); }
     const b=document.createElement('button'); b.className='tool'; b.dataset.tool=t.id; const i=document.createElement('i'); i.style.background=t.c; b.append(i,document.createTextNode(t.label));
     b.addEventListener('click',()=>setTool(t.id)); box.appendChild(b); } })();
-function setTool(id){ const T=TOOL_BY[id]; if(E.daily&&T&&(['line','rect','point'].includes(T.kind)||(T.kind==='obj'&&T.key!=='start'))){ toast('En el daily solo se cambian el inicio, la cafetera con café (arriba) y las rutas de los jefes.'); return; }
+function setTool(id){
   E.tool=id; for(const b of document.querySelectorAll('.tool')) b.classList.toggle('on',b.dataset.tool===id); updateHint(); draw(); }
 
 function openEditor(id){
@@ -1712,7 +1725,7 @@ function openEditor(id){
   setTool(E.tool); resizeCanvas(); if(!E.fitted){ fit(); E.fitted=cw>=10; } refreshEditorUI(); draw();
 }
 function closeEditor(){ flushSave(); showMenu(); }
-$('eBack').addEventListener('click',()=>{ try{ history.replaceState(null,'','#'); }catch(e){} closeEditor(); });
+$('eBack').addEventListener('click',()=>{ if(PAGE==='gestor'){ flushSave(); openDailyCal(); return; } try{ history.replaceState(null,'','#'); }catch(e){} closeEditor(); });
 function loadIntoEditor(id){
   const m=mapById(id)||mapById('original'); id=mapById(id)?id:'original';
   E.daily=null; E.id=id; E.map=clone(m.map); E.undo=[]; E.redo=[]; E.sel=null; E.multi=null; E.boss=0; E.fitted=false;
@@ -1729,7 +1742,7 @@ function refreshEditorUI(){
   $('ePlay').disabled=!engine; if(!engine) $('ePlay').title='El juego 3D no está disponible en este navegador';
   $('eUndo').disabled=!E.undo.length; $('eRedo').disabled=!E.redo.length;
   if(isBuiltin(E.id)) $('eSave').textContent=cloudEdit()?(E.cloudState||'Etapa oficial de dev · se guarda en la nube'):'Al editar se crea tu copia';
-  $('eDailyBtn').hidden=!BUILTIN.etapa3||!cloudEdit(); $('eDailyCtl').hidden=!E.daily;
+  $('eDailyBtn').hidden=PAGE!=='gestor'; $('eDailyBtn').textContent='Calendario'; $('eDailyCtl').hidden=!E.daily; $('eDailyOut').hidden=PAGE==='gestor';
   if(E.daily){ $('eName').value=DAILY_PFX+E.daily.fecha; $('eName').disabled=true; st.className='badge afinado'; st.textContent='Daily';
     const sel=$('eDailyCaf'); sel.textContent=''; E.map.obj.machines.forEach((q,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=String(i+1); sel.appendChild(o); }); sel.value=String(E.daily.cafetera);
     $('eSave').textContent=E.dailyState||(E.daily.nuevo?'Día sin programar: se guarda al primer cambio':'Daily · se guarda solo'); }
@@ -1762,7 +1775,7 @@ function renderCal(){ const g=$('dGrid'); g.textContent=''; const {y,m}=DCAL, fi
   for(let d=1;d<=days;d++){ const f=ymd(y,m,d), b=document.createElement('button'); b.textContent=String(d);
     if(DCAL.list.has(f)) b.classList.add('on'); if(f===hoy) b.classList.add('today'); if(f<hoy) b.classList.add('past');
     b.title=DCAL.list.has(f)?'Programado':'Sin programar'; b.disabled=!DCAL.loaded; b.addEventListener('click',()=>enterDaily(f)); g.appendChild(b); } }
-function openDailyCal(){ if(!BUILTIN.etapa3){ toast('El daily usa la Etapa 3, que no está disponible aquí.'); return; }
+function openDailyCal(){ $('dClose').hidden=!E.daily;
   const [y,m]=hoyCL().split('-').map(Number); if(!DCAL.y){ DCAL.y=y; DCAL.m=m-1; } $('dailyCal').hidden=false; $('dKey').value=''; renderCal(); dailyLoadList(); }
 $('eDailyBtn').addEventListener('click',openDailyCal);
 $('dClose').addEventListener('click',()=>{ $('dailyCal').hidden=true; });
@@ -1770,14 +1783,16 @@ $('dPrev').addEventListener('click',()=>{ DCAL.m--; if(DCAL.m<0){ DCAL.m=11; DCA
 $('dNext').addEventListener('click',()=>{ DCAL.m++; if(DCAL.m>11){ DCAL.m=0; DCAL.y++; } renderCal(); });
 $('dKeyOk').addEventListener('click',()=>{ DKEY=$('dKey').value.trim(); try{ localStorage.setItem('cafecito-daily-clave',DKEY); }catch(e){} dailyLoadList(); });
 $('dKey').addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Enter') $('dKeyOk').click(); });
-function enterDaily(f){ flushSave(); const base=BUILTIN.etapa3, cfg=DCAL.list.get(f);
-  const map=clone(base); if(cfg){ map.start=Object.assign({},map.start,cfg.start); if(Array.isArray(cfg.bosses)) map.bosses=clone(cfg.bosses); }
-  E.daily={fecha:f,cafetera:cfg?Math.min(Number(cfg.cafetera)||0,base.obj.machines.length-1):0,nuevo:!cfg};
+function cfgMap(cfg){ if(cfg&&cfg.map) return sanitizeMap(clone(cfg.map)); const m=clone(BUILTIN.etapa3); if(cfg){ m.start=Object.assign({},m.start,cfg.start||{}); if(Array.isArray(cfg.bosses)) m.bosses=clone(cfg.bosses); } return m; }
+function enterDaily(f){ flushSave(); let cfg=DCAL.list.get(f), from=null;
+  if(!cfg){ const prev=[...DCAL.list.keys()].filter(k=>k<f).sort().pop(); if(prev){ from=prev; } }
+  const src=cfg||(from?DCAL.list.get(from):null), map=cfgMap(src);
+  E.daily={fecha:f,cafetera:src?Math.min(Number(src.cafetera)||0,map.obj.machines.length-1):0,nuevo:!cfg};
   E.id='daily:'+f; E.map=map; E.undo=[]; E.redo=[]; E.sel=null; E.multi=null; E.boss=0; E.fitted=false; E.dailyState='';
   E.meta={name:DAILY_PFX+f,status:'original',notas:'',notaClaude:'',by:'daniel',parent:''};
   $('dailyCal').hidden=true; setTool('sel'); recompute(); refreshEditorUI(); resizeCanvas(); fit(); E.fitted=cw>=10; draw();
-  toast(cfg?'Daily del '+f+': mueve el inicio, elige la cafetera y ajusta las rutas. Se guarda solo.':'Día nuevo: parte igual que la Etapa 3. Lo que cambies se guarda para el '+f+'.',4); }
-function saveDailyNow(){ const d=E.daily; if(!d) return; const st=E.map.start, cfg={start:{x:st.x,z:st.z,r:st.r||0},cafetera:d.cafetera,bosses:clone(E.map.bosses)};
+  toast(cfg?'Daily del '+f+'. Lo que cambies se guarda solo para ese día.':from?'Día nuevo: parte como copia del '+from+'. Lo que cambies se guarda para el '+f+'.':'Día nuevo: parte como la Etapa 3. Lo que cambies se guarda para el '+f+'.',4); }
+function saveDailyNow(){ const d=E.daily; if(!d) return; const map=clone(E.map); map.name=DAILY_PFX+d.fecha; map.obj.desk={x:map.start.x,z:map.start.z,r:map.start.r}; const cfg={map,cafetera:Math.min(d.cafetera,map.obj.machines.length-1)};
   const say=t=>{ E.dailyState=t; if(E.daily===d) $('eSave').textContent=t; }; say('Guardando el daily…');
   dailyRpc('guardar_daily',{p_fecha:d.fecha,p_config:cfg}).then(()=>{ DCAL.list.set(d.fecha,cfg); d.nuevo=false; delete dailyCache[d.fecha]; delete dailyCache.hoy; if(!DAILY||DAILY.fecha===d.fecha||d.fecha===hoyCL()){ DAILY=null; loadDaily(); } say('Daily guardado'); })
     .catch(e=>{ say(/Clave/i.test(e.server||'')?'Clave incorrecta: abre «Daily» y escríbela de nuevo':'No se pudo guardar el daily: '+netMsg(e)); }); }
@@ -2148,6 +2163,7 @@ function paint(){
     const a=o.r*D2R; c.strokeStyle='#5fd3c3'; c.lineWidth=2; c.beginPath(); c.moveTo(x+Math.sin(a)*rr,y-Math.cos(a)*rr); c.lineTo(x+Math.sin(a)*(rr+8),y-Math.cos(a)*(rr+8)); c.stroke();
     if(s>12){ c.fillStyle='#e6fffb'; c.font='600 12px Rubik, sans-serif'; c.textBaseline='alphabetic'; c.fillText(lab,x,y-rr-6); } }
   c.textBaseline='alphabetic';
+  if(E.daily&&$('eDailyCaf').options.length!==ob.machines.length) setTimeout(refreshEditorUI,0);
   if(E.daily){ const q=ob.machines[E.daily.cafetera]; if(q){ const [x,y]=toS(q.x,q.z), rr=Math.max(9,0.38*s)+6; c.strokeStyle='#ffcf3f'; c.lineWidth=3; c.beginPath(); c.arc(x,y,rr,0,TAU); c.stroke();
     c.fillStyle='#ffcf3f'; c.font='700 12px Rubik, sans-serif'; c.textAlign='center'; c.fillText('☕ con café',x,y+rr+14); } }
   // jefes
@@ -2198,6 +2214,10 @@ refreshMenu();
 if(engine) engine.load(ORIGINAL,'original',ORIGINAL.name);
 if(!EDITOR_ON) $('editBtn').remove();
 if(location.hash==='#editor'&&EDITOR_ON) openEditor('original'); else showScreen('menu');
+if(PAGE==='daily'){ document.body.classList.add('page-daily'); document.title='Daily · '+document.title; $('startBtn').disabled=true; $('startBtn').textContent='Jugar el daily'; }
+if(PAGE==='gestor'){ document.body.classList.add('page-gestor'); document.title='Gestor del daily · '+document.title.replace('[DEV] ','');
+  if(!EDITOR_ON){ $('dailyHead').hidden=false; showScreen('menu'); $('menu').querySelector('.card').innerHTML='<h2 class="big">Gestor del daily</h2><p class="brief">El gestor funciona en el ambiente de pruebas: <a href="https://dev.operacion-cafecito.pages.dev/gestor" style="color:#ffcf3f">dev.operacion-cafecito.pages.dev/gestor</a></p>'; }
+  else setTimeout(()=>{ openEditor('etapa3'); $('eBack').textContent='← Calendario'; openDailyCal(); },0); }
 window.__cafe={engine,E,layout,validate,sanitizeMap,ORIGINAL,ETAPA2,ETAPA3,Store,openEditor,loadIntoEditor,geo:{pointHits,segBlocked,rayLen,lineSnap}};
 })();
 </script>

@@ -19,3 +19,11 @@ Controles: WASD para moverte, mouse para mirar, Shift para correr, C para agacha
 | Pruebas | `dev` | https://dev.operacion-cafecito.pages.dev | tabla `puntajes_dev` |
 
 Los cambios se suben primero a `dev`. Cuando están probados, se juntan con `main` y quedan públicos.
+
+## Páginas
+
+| Página | Para qué |
+|---|---|
+| `/` | Juego normal con las etapas |
+| `/daily` | Solo el daily de hoy y el ranking de los días anteriores |
+| `/gestor` | Programar cada día del daily: plano completo, inicio, cafetera con café y rutas de jefes (solo en dev; pide clave) |
