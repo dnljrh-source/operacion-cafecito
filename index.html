@@ -326,6 +326,7 @@ const r2=v=>Math.round(v*100)/100;
 const VIEW={stand:10,crouch:6,fov:38*D2R,sense:1.6};
 function hrand(a,b,c){ let h=(Math.imul(a+1,73856093)^Math.imul(b+7,19349663)^Math.imul(c+13,83492791))>>>0; h=Math.imul(h^(h>>>13),1274126177)>>>0; h^=h>>>16; return (h>>>0)/4294967296; }
 const fmt=t=>{ const s=Math.floor(t); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); };
+const fmt2=t=>{ const cs=Math.round((Number(t)||0)*100); return String(Math.floor(cs/6000)).padStart(2,'0')+':'+String(Math.floor(cs/100)%60).padStart(2,'0')+'.'+String(cs%100).padStart(2,'0'); };
 let toastT=0;
 function toast(msg,secs){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); toastT=secs||2.6; }
 setInterval(()=>{ if(toastT>0){ toastT-=0.1; if(toastT<=0) $('toast').classList.remove('show'); } },100);
@@ -333,7 +334,7 @@ function showScreen(id){ if(id){ $('toast').classList.remove('show'); toastT=0; 
 
 /* ================= datos ================= */
 const LOOKS=[
-  {id:'gonzalo',label:'Gerente pelado con bigote',role:'Gerente de operaciones',color:'#ff7a59',
+  {id:'gonzalo',label:'Gerente pelado con bigote',role:'Gerente general',color:'#ff7a59',
    look:{skin:0xe8b996,top:0x3b3f4a,pants:0x30333b,shirt:0xf4f4f4,tie:0xc0392b,hairC:0x9a9a9a,hair:'bald',mustache:true,angry:true,wide:true},
    lines:['¿Café a esta hora? Pasa a mi oficina, tenemos que hablar de tus KPI.','Justo a ti te buscaba. ¿Viste el correo que te mandé hace dos minutos?']},
   {id:'ricardo',label:'Jefe de proyectos con lentes',role:'Jefe de proyectos',color:'#ffc23f',
@@ -384,9 +385,9 @@ const ORIGINAL={v:1,name:'Etapa 1 · original',size:{w:32,d:22},
     {t:'letrero',x:-10.85,z:-8.75,r:90,text:'BODEGA'},{t:'letrero',x:8.85,z:6.75,r:270,text:'COCINA'},{t:'letrero',x:11.75,z:2.85,r:0,text:'COCINA'},{t:'letrero',x:12.5,z:-2.9,r:180,text:'SALA DE REUNIONES'}
   ],
   bosses:[
-    {name:'Gonzalo',look:'gonzalo',speed:1.5,loop:true,path:[{x:5.3,z:-3.7,w:2,face:90,sweep:40},{x:5.3,z:3.7,w:2.5,face:180,sweep:34},{x:-7,z:3.7,w:2,face:0,sweep:29},{x:-7,z:-3.7,w:2.5,face:270,sweep:34}]},
-    {name:'Ricardo',look:'ricardo',speed:1.35,loop:false,path:[{x:13.9,z:6.8,w:5,face:90,sweep:14},{x:11.7,z:4.3,w:0,face:0,sweep:0},{x:11.7,z:0,w:1.5,face:270,sweep:34},{x:7.5,z:0,w:0,face:0,sweep:0},{x:7.5,z:-10.2,w:0,face:0,sweep:0},{x:-9.5,z:-10.2,w:3,face:225,sweep:34}]},
-    {name:'Patricia',look:'patricia',speed:1.1,loop:true,path:[{x:10,z:-4.2,w:3,face:270,sweep:40},{x:15,z:-4.2,w:3,face:180,sweep:34},{x:15,z:-9.6,w:1.5,face:270,sweep:17},{x:10,z:-9.6,w:2,face:270,sweep:29}]}
+    {name:'Daniel Jara',look:'gonzalo',speed:1.5,loop:true,path:[{x:5.3,z:-3.7,w:2,face:90,sweep:40},{x:5.3,z:3.7,w:2.5,face:180,sweep:34},{x:-7,z:3.7,w:2,face:0,sweep:29},{x:-7,z:-3.7,w:2.5,face:270,sweep:34}]},
+    {name:'Martin Lion',look:'ricardo',speed:1.35,loop:false,path:[{x:13.9,z:6.8,w:5,face:90,sweep:14},{x:11.7,z:4.3,w:0,face:0,sweep:0},{x:11.7,z:0,w:1.5,face:270,sweep:34},{x:7.5,z:0,w:0,face:0,sweep:0},{x:7.5,z:-10.2,w:0,face:0,sweep:0},{x:-9.5,z:-10.2,w:3,face:225,sweep:34}]},
+    {name:'Claudius Hurtado',look:'mauricio',speed:1.1,loop:true,path:[{x:10,z:-4.2,w:3,face:270,sweep:40},{x:15,z:-4.2,w:3,face:180,sweep:34},{x:15,z:-9.6,w:1.5,face:270,sweep:17},{x:10,z:-9.6,w:2,face:270,sweep:29}]}
   ]};
 
 
@@ -415,10 +416,10 @@ const ETAPA2={v:1,name:'Etapa 2 · La U',size:{w:40,d:28},
     {t:'mesa',x0:14.5,z0:9.5,x1:17,z1:10.7},{t:'tele',x:19.8,z:10,r:270},{t:'planta_alta',x:19.4,z:13.4,r:0},{t:'letrero',x:15.5,z:5.9,r:0,text:'GERENCIA COMERCIAL'}
   ],
   bosses:[
-    {name:'Gonzalo',look:'gonzalo',speed:1.0,loop:true,path:[{x:12.2,z:-7.2,w:3,face:225,sweep:30},{x:18.8,z:-7.2,w:3,face:180,sweep:35},{x:18.8,z:-12.8,w:1.5,face:270,sweep:20},{x:12.2,z:-12.8,w:2.5,face:270,sweep:35}]},
+    {name:'Daniel Jara',look:'gonzalo',speed:1.0,loop:true,path:[{x:12.2,z:-7.2,w:3,face:225,sweep:30},{x:18.8,z:-7.2,w:3,face:180,sweep:35},{x:18.8,z:-12.8,w:1.5,face:270,sweep:20},{x:12.2,z:-12.8,w:2.5,face:270,sweep:35}]},
     {name:'Patricia',look:'patricia',speed:1.0,loop:true,path:[{x:12.5,z:7.2,w:3,face:0,sweep:35},{x:18.5,z:7.2,w:3,face:0,sweep:30},{x:18.5,z:12.6,w:1.5,face:270,sweep:20},{x:12.5,z:12.6,w:2,face:0,sweep:20}]},
-    {name:'Ricardo',look:'ricardo',speed:1.4,loop:false,path:[{x:-10,z:-6.6,w:2,face:270,sweep:30},{x:9.5,z:-6.6,w:0,face:90,sweep:0},{x:10.5,z:-5.2,w:0,face:90,sweep:0},{x:18,z:-5.2,w:0,face:90,sweep:0},{x:18,z:2.5,w:3,face:0,sweep:30}]},
-    {name:'Mauricio',look:'mauricio',speed:1.25,loop:false,path:[{x:-13,z:-6.5,w:2,face:90,sweep:30},{x:-12.8,z:3,w:0,face:180,sweep:0},{x:-13,z:5.5,w:0,face:180,sweep:0},{x:-18,z:9,w:4,face:270,sweep:20}]}
+    {name:'Martin Lion',look:'ricardo',speed:1.4,loop:false,path:[{x:-10,z:-6.6,w:2,face:270,sweep:30},{x:9.5,z:-6.6,w:0,face:90,sweep:0},{x:10.5,z:-5.2,w:0,face:90,sweep:0},{x:18,z:-5.2,w:0,face:90,sweep:0},{x:18,z:2.5,w:3,face:0,sweep:30}]},
+    {name:'Claudius Hurtado',look:'mauricio',speed:1.25,loop:false,path:[{x:-13,z:-6.5,w:2,face:90,sweep:30},{x:-12.8,z:3,w:0,face:180,sweep:0},{x:-13,z:5.5,w:0,face:180,sweep:0},{x:-18,z:9,w:4,face:270,sweep:20}]}
   ]};
 const BUILTIN={original:ORIGINAL,etapa2:ETAPA2};
 const isBuiltin=id=>Object.prototype.hasOwnProperty.call(BUILTIN,id);
@@ -977,7 +978,7 @@ function createEngine(){
   function win(){ if(game.state!=='play') return; game.state='win'; clearKeys(); sfx.win(); releaseLock(); document.body.classList.remove('drag','crouch','playing');
     const t=game.time, key='cafecito-best-'+current.key; let best=null, isBest=false; try{ best=parseFloat(localStorage.getItem(key))||null; }catch(e){}
     if(!best||t<best){ best=t; isBest=true; try{ localStorage.setItem(key,String(t)); }catch(e){} }
-    $('wTime').textContent=fmt(t); $('wSpot').textContent=String(game.spotted); $('wBest').textContent=fmt(best)+(isBest?' ★':'');
+    $('wTime').textContent=fmt2(t); $('wSpot').textContent=String(game.spotted); $('wBest').textContent=fmt2(best)+(isBest?' ★':'');
     $('wRank').textContent=game.spotted===0&&game.maxS<0.3?'★★★ Fantasma de oficina':game.spotted===0?'★★ Ninja del café':'★ Sobreviviente con taza';
     game.overlay=true; showScreen('win');
     try{ const o=LV.obj, sp=LV.start, hy=(a,b)=>Math.max(0,Math.hypot(a.x-b.x,a.z-b.z)-1.9);
@@ -1163,7 +1164,7 @@ function fillRows(tbody,rows,me,withDate){
   tbody.textContent='';
   rows.forEach((r,i)=>{ const tr=document.createElement('tr'); if(me&&String(r.nombre).trim().toLowerCase()===me.n.toLowerCase()&&Math.abs(Number(r.tiempo)-me.t)<0.011) tr.className='me';
     const td=(t,c)=>{ const x=document.createElement('td'); if(c) x.className=c; x.textContent=t; tr.appendChild(x); };
-    td(String(r.pos||i+1),'n'); td(String(r.nombre||'')); td(fmt(Number(r.tiempo)||0),'n'); td(String(r.visto??0),'n'); td('★'.repeat(clamp(Number(r.estrellas)||1,1,3)));
+    td(String(r.pos||i+1),'n'); td(String(r.nombre||'')); td(fmt2(Number(r.tiempo)||0),'n'); td(String(r.visto??0),'n'); td('★'.repeat(clamp(Number(r.estrellas)||1,1,3)));
     if(withDate) td(r.creado?new Date(r.creado).toLocaleDateString('es-CL',{day:'numeric',month:'short'}):'');
     tbody.appendChild(tr); });
 }
@@ -1187,7 +1188,7 @@ $('wSave').addEventListener('click',async()=>{
     lastRun.saved=true;
     const list=await bestList(lastRun.m); const pos=list.findIndex(r=>String(r.nombre).trim().toLowerCase()===n.toLowerCase())+1;
     const mine=list[pos-1]; const improved=mine&&Math.abs(Number(mine.tiempo)-lastRun.t)<0.011;
-    $('wMsg').textContent=improved?`¡Guardado! Quedaste en el lugar ${pos} de ${list.length}.`:`Guardado. Tu mejor marca sigue siendo ${fmt(Number(mine?mine.tiempo:lastRun.t))} (lugar ${pos}).`;
+    $('wMsg').textContent=improved?`¡Guardado! Quedaste en el lugar ${pos} de ${list.length}.`:`Guardado. Tu mejor marca sigue siendo ${fmt2(Number(mine?mine.tiempo:lastRun.t))} (lugar ${pos}).`;
     const top=list.slice(0,10).map((r,i)=>Object.assign({pos:i+1},r)); if(pos>10&&mine) top.push(Object.assign({pos},mine));
     fillRows($('wTop'),top,{n,t:Number(mine?mine.tiempo:lastRun.t)},false); $('wTopBox').hidden=false;
   }catch(e){ $('wMsg').textContent=netMsg(e); $('wSave').disabled=false; }
