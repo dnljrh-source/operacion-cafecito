@@ -120,9 +120,9 @@ begin
   if v_visto > 0 then v_estr := 1; end if;
 
   if pa.entorno = 'prod' then
-    insert into public.puntajes (nombre, mapa, tiempo, visto, estrellas) values (v_nombre, pa.mapa, v_tiempo, v_visto, v_estr);
+    insert into public.puntajes (nombre, mapa, tiempo, visto, estrellas, ruta) values (v_nombre, pa.mapa, v_tiempo, v_visto, v_estr, p_ruta);
   else
-    insert into public.puntajes_dev (nombre, mapa, tiempo, visto, estrellas) values (v_nombre, pa.mapa, v_tiempo, v_visto, v_estr);
+    insert into public.puntajes_dev (nombre, mapa, tiempo, visto, estrellas, ruta) values (v_nombre, pa.mapa, v_tiempo, v_visto, v_estr, p_ruta);
   end if;
   return json_build_object('ok', true, 'tiempo', v_tiempo);
 end $$;
