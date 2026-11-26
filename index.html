@@ -102,6 +102,9 @@ label.f{display:grid;gap:4px;font-size:14px;color:var(--muted)}
 .rtable .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .rtable tr.me td{color:var(--accent);font-weight:600}
 .rscroll{overflow-x:auto;margin:0 0 14px}
+#ghostBadge{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);z-index:60;background:#0f766e;color:#fff;font:600 12px Rubik,sans-serif;padding:4px 12px;border-radius:999px;pointer-events:none}
+#ghostBadge[hidden]{display:none}
+body:not(.playing) #ghostBadge{display:none}
 #envBadge{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:60;background:#7c3aed;color:#fff;font:600 12px Rubik,sans-serif;padding:4px 12px;border-radius:999px;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.35)}
 #wMsg,#rMsg{font-size:14px;color:var(--muted)}
 [hidden]{display:none!important}
@@ -965,6 +968,8 @@ function createEngine(){
   const P={x:0,z:0,yaw:0,pitch:0,eye:STAND_EYE,crouch:false,running:false,moving:false,noisy:false,capsule:false,coffee:false,brew:0,brewing:false,bob:0,warned:false};
   const game={state:'menu',time:0,catcher:null,overlay:false,spotted:0,maxS:0,seen:false};
   const keys={};
+  let ghost=false, ghostUsed=false, ghostInit=false; // modo fantasma: solo en dev, tecla G
+  function setGhost(v){ ghost=v; if(v) ghostUsed=true; const el=document.getElementById('ghostBadge'); if(el){ el.hidden=!v; } }
   const markerGeo=new THREE.OctahedronGeometry(0.16,0), markerMat=new THREE.MeshBasicMaterial({color:0xffcf3f,depthTest:false,transparent:true,opacity:0.95});
   const markers=[0,1,2,3,4,5].map(()=>{ const m=new THREE.Mesh(markerGeo,markerMat); m.renderOrder=20; m.scale.y=1.4; m.visible=false; scene.add(m); return m; });
 
@@ -1099,6 +1104,7 @@ function createEngine(){
     opts=opts||{}; audioOn(); load(map,key,opts.name); current.fromEditor=!!opts.fromEditor; current.onExit=opts.onExit||null;
     document.querySelectorAll('.toEditor').forEach(b=>b.hidden=!current.fromEditor);
     $('mapTitle').textContent=current.name||'Objetivos';
+    if(typeof ENV!=='undefined'&&ENV==='dev'&&!ghostInit){ ghostInit=true; setGhost(true); } ghostUsed=ghost;
     clearKeys(); game.state='play'; showScreen(null); document.body.classList.add('playing'); suspended=false;
     setDrag(dragMode); requestLock(); try{ canvas.focus({preventScroll:true}); }catch(e){}
     const hint=LV.obj.capsule?'Primero, la cápsula. Sigue el rombo amarillo.':LV.obj.machines.length>1?'Hoy solo una cafetera tiene café. Revisa las marcadas con rombo.':'Ve a la cafetera. Sigue el rombo amarillo.';
@@ -1118,7 +1124,7 @@ function createEngine(){
     game.overlay=true; showScreen('win');
     try{ const o=LV.obj, sp=LV.start, hy=(a,b)=>Math.max(0,Math.hypot(a.x-b.x,a.z-b.z)-1.9);
       const lb=Math.min(...o.machines.map(m=>((o.capsule?hy(sp,o.capsule)+hy(o.capsule,m):hy(sp,m))/SPEED.run)+BREW_TIME+hy(m,o.desk)/SPEED.walk));
-      document.dispatchEvent(new CustomEvent('cafe-win',{detail:{m:current.name||'Mapa',t,s:game.spotted,st:game.spotted===0&&game.maxS<0.3?3:game.spotted===0?2:1,lb,fromEditor:current.fromEditor}})); }catch(e){ console.error(e); } }
+      document.dispatchEvent(new CustomEvent('cafe-win',{detail:{m:current.name||'Mapa',t,s:game.spotted,st:game.spotted===0&&game.maxS<0.3?3:game.spotted===0?2:1,lb,fromEditor:current.fromEditor,ghost:ghostUsed}})); }catch(e){ console.error(e); } }
   $('retryBtn').addEventListener('click',restart); $('againBtn').addEventListener('click',restart); $('restartBtn').addEventListener('click',restart); $('resumeBtn').addEventListener('click',resume);
   let currentTarget=null;
   window.addEventListener('keydown',e=>{
@@ -1130,6 +1136,7 @@ function createEngine(){
       if(e.code==='KeyC'&&!e.repeat) P.crouch=!P.crouch;
       if(e.code==='KeyE'&&!e.repeat){ const it=currentTarget; if(it&&!it.hold&&it.ready()) it.act(); }
       if(e.code==='KeyR'&&!e.repeat){ restart(); return; }
+      if(e.code==='KeyG'&&!e.repeat&&typeof ENV!=='undefined'&&ENV==='dev'){ setGhost(!ghost); toast(ghost?'Modo fantasma activado: los jefes no te ven (G para quitarlo)':'Modo fantasma desactivado',2.2); }
       if((e.code==='Escape'&&dragMode)||e.code==='KeyP') pause();
     } else if(game.state==='pause'){ if(e.code==='KeyP'&&!e.repeat) resume(); else if(e.code==='KeyR'&&!e.repeat) restart(); }
     else if((game.state==='caught'||game.state==='win')&&game.overlay){ if(e.code==='KeyR'&&!e.repeat) restart(); }
@@ -1167,7 +1174,8 @@ function createEngine(){
     if(b.loop) b.i=(b.i+1)%n; else { if(b.i+b.dir<0||b.i+b.dir>=n) b.dir*=-1; b.i+=b.dir; } b.state='walk'; }
   function updateBoss(b,dt,perceive){
     b.seeing=false; b.cd=Math.max(0,b.cd-dt);
-    if(perceive){
+    if(perceive&&ghost){ b.susp=Math.max(0,b.susp-0.5*dt); }
+    if(perceive&&!ghost){
       const d=canSee(b);
       if(d>=0){ b.seeing=true; b.lost=0; b.lx=P.x; b.lz=P.z; const range=P.crouch?VIEW.crouch:VIEW.stand, near=clamp(1-d/range,0,1);
         let rate=0.35+1.3*Math.pow(near,1.5); if(P.running) rate*=1.4; if(d<VIEW.sense) rate=Math.max(rate,2.2);
@@ -1284,7 +1292,8 @@ window.addEventListener('hashchange',()=>{ if(location.hash==='#editor'){ if(!do
 const PROD_HOSTS=['operacion-cafecito.pages.dev','dnljrh-source.github.io'];
 const ENV=PROD_HOSTS.includes(location.hostname)?'prod':'dev';
 const SUPA={url:'https://mczzzznhddyevvfydloh.supabase.co',key:'sb_publishable_vDIwcp-c0JRwkVa772J5RQ_k5h0_YVZ',table:ENV==='prod'?'puntajes':'puntajes_dev'};
-if(ENV==='dev'){ document.title='[DEV] '+document.title; const b=document.createElement('div'); b.id='envBadge'; b.textContent='DEV · ambiente de pruebas'; document.body.appendChild(b); }
+if(ENV==='dev'){ document.title='[DEV] '+document.title; const b=document.createElement('div'); b.id='envBadge'; b.textContent='DEV · ambiente de pruebas'; document.body.appendChild(b);
+  const g=document.createElement('div'); g.id='ghostBadge'; g.hidden=true; g.textContent='👻 Modo fantasma · G para quitarlo'; document.body.appendChild(g); }
 const rankingOn=!!(SUPA.url&&SUPA.key);
 async function supa(path,opts){
   const o=opts||{}; const r=await fetch(SUPA.url+'/rest/v1/'+path,{method:o.method||'GET',body:o.body,headers:Object.assign({apikey:SUPA.key,'Content-Type':'application/json'},o.headers||{})});
@@ -1308,7 +1317,7 @@ let myName=''; try{ myName=localStorage.getItem('cafecito-nombre')||''; }catch(e
 let lastRun=null, saving=false;
 document.addEventListener('cafe-win',ev=>{
   const d=ev.detail; lastRun={m:d.m,t:Math.round(d.t*100)/100,s:d.s,st:d.st,lb:d.lb,saved:false};
-  const box=$('saveBox'); box.hidden=!rankingOn||d.fromEditor; if(box.hidden) return;
+  const box=$('saveBox'); box.hidden=!rankingOn||d.fromEditor||d.ghost; if(box.hidden) return;
   $('wName').value=myName; $('wSave').disabled=false; $('wTopBox').hidden=true;
   $('wMsg').textContent=lastRun.t<Math.max(8,lastRun.lb*0.97)?'Ese tiempo es más rápido de lo que permite el mapa, así que no se puede guardar.':'¿Quieres anotarte?';
   if(lastRun.t<Math.max(8,lastRun.lb*0.97)) $('wSave').disabled=true;
