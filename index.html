@@ -439,10 +439,14 @@ const ETAPA3=(()=>{
     // zonas fuera del verde y núcleo del edificio
     {t:'nucleo',x0:-23,z0:-11,x1:-15.25,z1:2.75},{t:'nucleo',x0:-15.25,z0:-11,x1:-12.75,z1:-5.5},
     {t:'nucleo',x0:-15.25,z0:-1,x1:-11.5,z1:2.75},{t:'nucleo',x0:-11.5,z0:-1,x1:-9.25,z1:1.75},
-    {t:'nucleo',x0:-9.5,z0:-0.75,x1:4.5,z1:4.75},{t:'nucleo',x0:-9.5,z0:-3.75,x1:3,z1:-0.75},{t:'nucleo',x0:4.5,z0:-0.75,x1:6.25,z1:1.6},
+    {t:'nucleo',x0:-9.5,z0:-3.75,x1:-2.5,z1:4.75},{t:'nucleo',x0:-2.5,z0:-3.75,x1:3,z1:-3.4},{t:'nucleo',x0:-2.5,z0:0.75,x1:4.5,z1:4.75},
+    // hall de ascensores (no accesible): se ve a través del vidrio de la recepción
+    {t:'piso',mat:'baldosa',x0:-2.5,z0:-3.4,x1:3,z1:0.75},{t:'vidrio',x0:3,z0:-3.4,x1:3,z1:0.75},
+    {t:'puerta',x:-2.45,z:-2.4,r:90,text:'ASCENSOR'},{t:'puerta',x:-2.45,z:-0.5,r:90,text:'ASCENSOR'},{t:'puerta',x:-1,z:0.7,r:0,text:'ASCENSOR'},{t:'puerta',x:1,z:0.7,r:0,text:'ASCENSOR'},
+    {t:'letrero',x:-2.45,z:-1.45,r:90,text:'Love'},{t:'planta_alta',x:2.55,z:-3.0,r:0},{t:'letrero',x:3.06,z:-2.2,r:90,text:'ASCENSORES'},
     // M: salas 5, 4 y 6 · S: baños y salas de apoyo
-    {t:'nucleo',x0:-18.75,z0:2.75,x1:-9.25,z1:4.75},{t:'nucleo',x0:4.5,z0:-0.75,x1:7,z1:4.75},{t:'nucleo',x0:8.6,z0:1.6,x1:15,z1:4.75},{t:'muro',x0:8.7,z0:-0.6,x1:8.7,z1:1.6},{t:'muro',x0:7,z0:-0.5,x1:8.6,z1:-0.5},
-    {t:'puerta',x:7.05,z:0.5,r:90,text:'WC'},{t:'puerta',x:7.05,z:2,r:90,text:'WC'},{t:'puerta',x:7.05,z:3.5,r:90,text:'WC'},{t:'puerta',x:8.55,z:0.5,r:270,text:'WC'},{t:'puerta',x:8.55,z:2,r:270,text:'WC'},{t:'puerta',x:8.55,z:3.5,r:270,text:'WC'},{t:'letrero',x:7.8,z:-0.45,r:180,text:'BAÑOS'},
+    {t:'nucleo',x0:-18.75,z0:2.75,x1:-9.25,z1:4.75},{t:'nucleo',x0:4.5,z0:0.75,x1:7,z1:4.75},{t:'muro',x0:7,z0:-0.75,x1:7,z1:0.75},{t:'nucleo',x0:8.6,z0:1.6,x1:15,z1:4.75},{t:'muro',x0:8.7,z0:-0.6,x1:8.7,z1:1.6},{t:'muro',x0:7,z0:-0.5,x1:8.6,z1:-0.5},
+    {t:'puerta',x:7.05,z:1.4,r:90,text:'WC'},{t:'puerta',x:7.05,z:2.6,r:90,text:'WC'},{t:'puerta',x:7.05,z:3.8,r:90,text:'WC'},{t:'puerta',x:8.55,z:1.4,r:270,text:'WC'},{t:'puerta',x:8.55,z:2.6,r:270,text:'WC'},{t:'puerta',x:8.55,z:3.8,r:270,text:'WC'},{t:'letrero',x:7.8,z:-0.45,r:180,text:'BAÑOS'},
     // N: sala 9 · G2: gerencia izquierda
     {t:'vidrio',x0:-18.75,z0:2.75,x1:-18.75,z1:4},{t:'vidrio',x0:-18.75,z0:5,x1:-18.75,z1:5.75},{t:'muro',x0:-23,z0:5.75,x1:-18.75,z1:5.75},
     {t:'mesa',x0:-22.2,z0:3.5,x1:-20.2,z1:4.5},{t:'tele',x:-22.85,z:4,r:90},
@@ -477,7 +481,7 @@ const ETAPA3=(()=>{
     {t:'mesa',x0:9.9,z0:-2.3,x1:10.7,z1:-1.8},{t:'planta_alta',x:10.6,z:zAt(10.6)+0.45,r:0},
     // C: salas 7 y 3, zona 12
     
-    {t:'meson',x0:4.2,z0:-1.85,x1:6.2,z1:-1.25},{t:'persona',x:5.2,z:-1.0,r:0},{t:'puerta',x:3.05,z:-1.4,r:90,text:'ASCENSORES'},{t:'letrero',x:5.2,z:-0.8,r:0,text:'RECEPCIÓN'},{t:'letrero',x:3.05,z:-2.7,r:90,text:'Love'},{t:'planta_alta',x:3.35,z:-2.9,r:0},
+    {t:'meson',x0:4.2,z0:-0.4,x1:6.2,z1:0.2},{t:'persona',x:5.2,z:0.48,r:0},{t:'letrero',x:5.2,z:0.7,r:0,text:'RECEPCIÓN'},{t:'planta_alta',x:3.35,z:-2.9,r:0},
     
     
     {t:'planta_alta',x:3.4,z:zAt(3.4)+0.4,r:0},
@@ -904,6 +908,8 @@ function createEngine(){
         for(let i=0;i<7;i++) box(MB([0x2a4fb0,0x2a4fb0,0x1f3b8a,0xb03a3a][i%4]),0.25+hrand(i,3,1)*0.45,0.018,0.005,-0.45+hrand(i,2,2)*0.25+(i>3?0.55:0),1.7-(i%4)*0.18,0.02,g,true);
         box(MB(0xe53935),0.04,0.04,0.01,-0.62,1.76,0.02,g,true); box(MB(0xfbc02d),0.04,0.04,0.01,-0.2,1.76,0.02,g,true); box(MB(0x1e63d6),0.04,0.04,0.01,0.1,1.76,0.02,g,true); box(0x2a55c8,0.1,0.04,0.05,0.35,0.8,0.05,g,true); break; }
       case 'puerta': { const [x,z]=snapWall(p.x,p.z,p.yaw,L.solids,0.03); const g=group(x,z,p.yaw), wc=/^WC/i.test(p.text||'');
+        if(/^ASCENSOR$/i.test(p.text||'')){ box(0x5d636a,1.4,2.35,0.06,0,1.175,0,g,true); for(const sd of [-1,1]) box(0xc3c9cf,0.58,2.15,0.04,sd*0.295,1.075,0.03,g,true); box(0x30353b,0.012,2.15,0.05,0,1.075,0.03,g,true);
+          box(MB(0x15171a),0.36,0.14,0.02,0,2.5,0.03,g,true); box(MB(0xff9a1f),0.08,0.07,0.01,-0.08,2.5,0.045,g,true); box(0x9aa1a8,0.1,0.22,0.02,0.85,1.15,0.02,g,true); box(MB(0xe9f2ff),0.04,0.04,0.01,0.85,1.2,0.035,g,true); break; }
         box(0x4c5158,1.05,2.2,0.05,0,1.1,0,g,true); box(wc?0x8d939b:0xc49a6c,0.92,2.1,0.05,0,1.05,0.02,g,true); box(0xd6d9dc,0.04,0.04,0.14,0.36,1.0,0.07,g,true);
         if(p.text){ const c=document.createElement('canvas'); c.width=128; c.height=128; const q=c.getContext('2d'); q.fillStyle=wc?'#2b3442':'#ffffff'; q.fillRect(0,0,128,128);
           q.fillStyle=wc?'#ffffff':'#2b3442'; let fs=wc?54:30; q.font=`800 ${fs}px Rubik, Arial, sans-serif`; while(q.measureText(p.text).width>116&&fs>12){ fs-=2; q.font=`800 ${fs}px Rubik, Arial, sans-serif`; } q.textAlign='center'; q.textBaseline='middle'; q.fillText(p.text,64,66);
