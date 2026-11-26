@@ -358,7 +358,7 @@ const LOOK_BY=Object.fromEntries(LOOKS.map(l=>[l.id,l]));
 const TYPES={
   muro:{kind:'line',label:'Muro'}, vidrio:{kind:'line',label:'Vidrio'}, tabique:{kind:'line',label:'Tabique bajo'}, ventana:{kind:'line',label:'Ventanal'},
   piso:{kind:'rect',label:'Piso'}, nucleo:{kind:'rect',label:'Núcleo (pared gruesa)'}, cubiculos:{kind:'rect',label:'Cubículos'}, mesa:{kind:'rect',label:'Mesa'},
-  archivo:{kind:'rect',label:'Archivador bajo'}, mueble:{kind:'rect',label:'Mueble alto'}, estante:{kind:'rect',label:'Estante'}, meson:{kind:'rect',label:'Mesón'},
+  archivo:{kind:'rect',label:'Archivador bajo'}, mueble:{kind:'rect',label:'Mueble alto'}, estante:{kind:'rect',label:'Estante'}, meson:{kind:'rect',label:'Mesón'}, repisa:{kind:'rect',label:'Mesa flotante'},
   planta:{kind:'point',label:'Planta',w:.55,d:.55,h:1.1}, planta_alta:{kind:'point',label:'Planta alta',w:.55,d:.55,h:1.7},
   pilar:{kind:'point',label:'Pilar',w:.6,d:.6,h:3.2}, dispensador:{kind:'point',label:'Dispensador de agua',w:.4,d:.4,h:1.25},
   maquina:{kind:'point',label:'Máquina de snacks',w:1.1,d:.75,h:1.95}, refri:{kind:'point',label:'Refri',w:.75,d:.8,h:1.95},
@@ -460,13 +460,14 @@ const ETAPA3=(()=>{
     {t:'letrero',x:-2,z:4.8,r:180,text:'Love'},{t:'letrero',x:-18.7,z:3.4,r:90,text:'SALA 9 · RED'},{t:'letrero',x:-18.7,z:8.6,r:90,text:'GERENCIA'},
     {t:'letrero',x:5.75,z:4.8,r:180,text:'BAÑOS'},{t:'letrero',x:11.8,z:4.8,r:180,text:'VÍA DE EVACUACIÓN'},{t:'letrero',x:11.8,z:1.55,r:0,text:'IMPRESIÓN'},
     {t:'impresora',x:12.2,z:1.25,r:0},{t:'dispensador',x:16.2,z:-0.6,r:0},
-    // H: salas 1 y 2
-    {t:'vidrio',x0:16.6,z0:1.6,x1:16.6,z1:1.95},{t:'vidrio',x0:16.6,z0:2.8,x1:16.6,z1:3.5},{t:'vidrio',x0:16.6,z0:4.35,x1:16.6,z1:4.75},
-    {t:'muro',x0:16.6,z0:1.6,x1:19.25,z1:1.6},{t:'muro',x0:16.6,z0:3.15,x1:19.25,z1:3.15},{t:'vidrio',x0:16.6,z0:4.75,x1:19.25,z1:4.75},
-    {t:'mesa',x0:17.5,z0:2.05,x1:18.7,z1:2.65},{t:'mesa',x0:17.5,z0:3.7,x1:18.7,z1:4.25},{t:'letrero',x:16.55,z:3.15,r:270,text:'SALAS 1 Y 2'},
+    // H: salas 1 y 2 — cabinas de 0,9 m para usar de pie, pegadas al muro derecho, con mesa flotante
+    {t:'vidrio',x0:18.35,z0:1.6,x1:18.35,z1:1.95},{t:'vidrio',x0:18.35,z0:2.8,x1:18.35,z1:3.5},{t:'vidrio',x0:18.35,z0:4.35,x1:18.35,z1:4.75},
+    {t:'muro',x0:18.35,z0:1.6,x1:19.25,z1:1.6},{t:'muro',x0:18.35,z0:3.15,x1:19.25,z1:3.15},{t:'vidrio',x0:18.35,z0:4.75,x1:19.25,z1:4.75},
+    {t:'repisa',x0:18.75,z0:1.8,x1:19.15,z1:2.95},{t:'repisa',x0:18.75,z0:3.35,x1:19.15,z1:4.55},
+    {t:'letrero',x:18.3,z:2.4,r:270,text:'SALA 2'},{t:'letrero',x:18.3,z:3.9,r:270,text:'SALA 1'},
     // F: sala 11 · G1: gerencia derecha
-    {t:'vidrio',x0:19.25,z0:zAt(19.2),x1:19.25,z1:0},{t:'vidrio',x0:19.25,z0:1.1,x1:19.25,z1:4.75},{t:'muro',x0:19.25,z0:4.75,x1:23,z1:4.75},
-    {t:'mesa',x0:20.3,z0:-0.4,x1:21.9,z1:3.9},{t:'tele',x:22.85,z:1.8,r:270},{t:'letrero',x:19.2,z:2.9,r:270,text:'SALA 11 · PROPÓSITO'},
+    {t:'vidrio',x0:19.25,z0:zAt(19.2),x1:19.25,z1:0},{t:'vidrio',x0:19.25,z0:1.1,x1:19.25,z1:1.6},{t:'muro',x0:19.25,z0:1.6,x1:19.25,z1:4.75},{t:'muro',x0:19.25,z0:4.75,x1:23,z1:4.75},
+    {t:'mesa',x0:20.3,z0:-0.4,x1:21.9,z1:3.9},{t:'tele',x:22.85,z:1.8,r:270},{t:'letrero',x:18.8,z:1.55,r:0,text:'SALA 11'},
     {t:'vidrio',x0:19.25,z0:5.95,x1:19.25,z1:11},{t:'mesa',x0:21.4,z0:7,x1:22.6,z1:8.6},{t:'tele',x:22.85,z:9.6,r:270},{t:'planta_alta',x:22.5,z:5.3,r:0},{t:'archivo',x0:20.2,z0:10.45,x1:21.9,z1:10.85},
     {t:'letrero',x:19.2,z:8,r:270,text:'GERENCIA GENERAL'},
     // D: sala 10 y estar · E: sala 8
@@ -573,6 +574,7 @@ function layout(map){
         case 'archivo': S(R.cx,R.cz,R.w,R.d,1.2,'mid'); props.push({k:'lowcab',x:R.cx,z:R.cz,w:R.w,d:R.d}); break;
         case 'mueble': S(R.cx,R.cz,R.w,R.d,1.9,'tall'); props.push({k:'tallcab',x:R.cx,z:R.cz,w:R.w,d:R.d}); break;
         case 'estante': S(R.cx,R.cz,R.w,R.d,2.0,'tall'); props.push({k:'shelf',x:R.cx,z:R.cz,w:R.w,d:R.d,seed:idx}); break;
+        case 'repisa': S(R.cx,R.cz,R.w,R.d,1.05,'low'); props.push({k:'shelfdesk',x:R.cx,z:R.cz,w:R.w,d:R.d}); break;
         case 'meson': S(R.cx,R.cz,R.w,R.d,0.92,'low'); props.push({k:'counter',x:R.cx,z:R.cz,w:R.w,d:R.d}); break;
         case 'nucleo': S(R.cx,R.cz,R.w,R.d,3.2,'wall'); props.push({k:'core',x:R.cx,z:R.cz,w:R.w,d:R.d}); break;
         case 'cubiculos': {
@@ -943,6 +945,7 @@ function createEngine(){
         for(const y of [0.05,0.7,1.35,1.98]) box(0x6b7480,p.w,0.04,p.d,0,y,0,g);
         for(const s of [-1,1]) box(0x59616c,alongZ?p.w:0.05,2.0,alongZ?0.05:p.d,alongZ?0:s*len/2,1.0,alongZ?s*len/2:0,g);
         shelfBoxes(g,len,alongZ,p.seed); break; }
+      case 'shelfdesk': box(0xe8dcc8,p.w,0.04,p.d,p.x,1.04,p.z); box(0x3a3f47,p.w*0.9,0.02,p.d*0.9,p.x,1.01,p.z,null,true); break;
       case 'counter': box(0xdedad0,p.w,0.9,p.d,p.x,0.45,p.z); box(0x3a3f47,p.w+0.04,0.05,p.d+0.04,p.x,0.93,p.z); break;
       case 'planta': case 'planta_alta': { const tall=p.k==='planta_alta', h=tall?1.25:0.65; cyl(0xc56a3f,0.5,0.45,0.5,p.x,0.22,p.z);
         for(let i=0;i<5;i++){ const l=box(i%2?0x4f9a58:0x3f8a4d,0.18,h*(0.7+rnd()*0.3),0.18,p.x+(rnd()-.5)*0.3,0.45+h*0.4,p.z+(rnd()-.5)*0.3); l.rotation.set((rnd()-.5)*0.7,rnd()*3,(rnd()-.5)*0.7); } break; }
@@ -1377,7 +1380,7 @@ const TOOLS=[
   {g:'Estructura',id:'cemento',label:'Piso cemento',kind:'rect',t:'piso',mat:'cemento',c:'#a9a59c'},{g:'Estructura',id:'alfombra',label:'Piso alfombra',kind:'rect',t:'piso',mat:'alfombra',c:'#77716a'},{g:'Estructura',id:'nucleo',label:'Núcleo (pared gruesa)',kind:'rect',t:'nucleo',c:'#3f4855'},
   {g:'Muebles',id:'cubiculos',label:'Cubículos',kind:'rect',t:'cubiculos',c:'#8fa3b8'},{g:'Muebles',id:'mesa',label:'Mesa',kind:'rect',t:'mesa',c:'#c9a77a'},
   {g:'Muebles',id:'archivo',label:'Archivador bajo',kind:'rect',t:'archivo',c:'#8fa3b8'},{g:'Muebles',id:'mueble',label:'Mueble alto',kind:'rect',t:'mueble',c:'#3f4855'},
-  {g:'Muebles',id:'estante',label:'Estante',kind:'rect',t:'estante',c:'#3f4855'},{g:'Muebles',id:'meson',label:'Mesón',kind:'rect',t:'meson',c:'#c9a77a'},
+  {g:'Muebles',id:'estante',label:'Estante',kind:'rect',t:'estante',c:'#3f4855'},{g:'Muebles',id:'repisa',label:'Mesa flotante',kind:'rect',t:'repisa',c:'#e8dcc8'},{g:'Muebles',id:'meson',label:'Mesón',kind:'rect',t:'meson',c:'#c9a77a'},
   {g:'Objetos',id:'planta',label:'Planta',kind:'point',t:'planta',c:'#4f9a58'},{g:'Objetos',id:'planta_alta',label:'Planta alta',kind:'point',t:'planta_alta',c:'#3f8a4d'},
   {g:'Objetos',id:'dispensador',label:'Dispensador',kind:'point',t:'dispensador',c:'#8fa3b8'},{g:'Objetos',id:'maquina',label:'Máquina de snacks',kind:'point',t:'maquina',c:'#3f4855'},
   {g:'Objetos',id:'refri',label:'Refri',kind:'point',t:'refri',c:'#3f4855'},{g:'Objetos',id:'fotocopiadora',label:'Fotocopiadora',kind:'point',t:'fotocopiadora',c:'#8fa3b8'},
