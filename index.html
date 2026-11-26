@@ -957,8 +957,8 @@ function createEngine(){
         box(ex?0xa9b1b8:0xc49a6c,DW-0.01,2.17,0.05,DW/2,1.09,0,piv);
         if(ex){ for(const sz of [-1,1]){ box(0xd32f2f,DW*0.78,0.07,0.06,DW/2,1.02,sz*0.06,piv,true); box(0x8a9096,0.05,0.12,0.06,DW*0.14,1.02,sz*0.05,piv,true); box(0x8a9096,0.05,0.12,0.06,DW*0.86,1.02,sz*0.05,piv,true); }
           const c=document.createElement('canvas'); c.width=256; c.height=96; const q=c.getContext('2d'); q.fillStyle='#1f9d55'; q.fillRect(0,0,256,96); q.fillStyle='#fff'; q.font='800 52px Rubik, Arial, sans-serif'; q.textAlign='center'; q.textBaseline='middle'; q.fillText('SALIDA',128,50);
-          const tx=new THREE.CanvasTexture(c); for(const sz of [1,-1]){ const m=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.23),own(new THREE.MeshBasicMaterial({map:tx}))); m.position.set(0,2.5,sz*0.155); if(sz<0) m.rotation.y=Math.PI; g.add(m); }
-          box(0x30353b,0.66,0.27,0.3,0,2.5,0,g,true);
+          const tx=new THREE.CanvasTexture(c), m=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.23),own(new THREE.MeshBasicMaterial({map:tx}))); m.position.set(0,2.5,0.155); g.add(m); // letrero solo por el frente (hacia donde mira en el editor)
+          box(0x30353b,0.66,0.27,0.05,0,2.5,0.125,g,true);
           box(WALL,DW+0.12,0.94,0.22,0,2.73,0,g); } // muro sobre la puerta de emergencia hasta el cielo
         else { for(const sz of [-1,1]) box(0xd6d9dc,0.04,0.04,0.12,DW-0.1,1.0,sz*0.06,piv,true); }
         if(!ex){ // vidrio fijo sobre la puerta hasta el cielo
@@ -1934,7 +1934,7 @@ function buildPanel(){
     if(o.t==='letrero'){ const inp=el('input',{maxlength:'22',value:o.text||''}); inp.addEventListener('focus',()=>snapshot()); inp.addEventListener('input',()=>{ o.text=inp.value.toUpperCase().slice(0,22); recompute(); scheduleSave(); draw(); });
       sec.append(el('label',{class:'f'},['Texto',inp])); }
     if(T.kind==='point') sec.append(posFields(o)); if(T.kind==='rect') sec.append(rectFields(o)); if(T.kind==='line') sec.append(lineFields(o));
-    if(T.kind==='point') sec.append(el('div',{class:'row'},[el('span',{text:'Mira hacia el '+dirName(o.r),style:'font-size:14px;color:#c3cad4'}),el('button',{class:'ghost sm',text:'Girar 90°',onclick:()=>rotateSel(1)})]));
+    if(T.kind==='point') sec.append(el('div',{class:'row'},[el('span',{text:(o.t==='salida'?'El letrero SALIDA mira hacia el ':'Mira hacia el ')+dirName(o.r),style:'font-size:14px;color:#c3cad4'}),el('button',{class:'ghost sm',text:'Girar 90°',onclick:()=>rotateSel(1)})]));
     if(o.t==='tele'||o.t==='letrero') sec.append(el('p',{text:'Se pega solo al muro que tenga detrás. Que mire hacia donde estará quien lo lea.'}));
     sec.append(el('div',{class:'row'},[el('button',{class:'danger sm',text:'Eliminar',onclick:()=>{ snapshot(); deleteSel(); changed(); }})]));
   }
@@ -2013,6 +2013,11 @@ function paint(){
       c.fillStyle=p.k==='tele'?'#5aa7d8':'#ffcf3f'; c.beginPath(); c.moveTo(-5,-0.06*s-4); c.lineTo(5,-0.06*s-4); c.lineTo(0,-0.06*s-11); c.closePath(); c.fill(); c.restore();
       if(p.k==='letrero'&&s>14&&p.text){ c.fillStyle='#fff'; c.font='600 11px Rubik, sans-serif'; c.textAlign='center'; c.fillText(p.text,x,y+0.4*s+10); } }
   }
+  // puertas de emergencia: marca del lado que dice SALIDA
+  for(const it of E.map.items){ if(it.t!=='salida') continue; const yaw=dirToYaw(it.r), fx=Math.sin(yaw), fz=Math.cos(yaw), [cx,cy]=toS(it.x,it.z), [ax,ay]=toS(it.x+fx*0.55,it.z+fz*0.55), px=-fz, pz=fx, w=Math.max(6,0.28*s);
+    c.fillStyle='#1f9d55'; c.beginPath(); c.moveTo(ax+fx*w,ay+fz*w); c.lineTo(ax+px*w,ay+pz*w); c.lineTo(ax-px*w,ay-pz*w); c.closePath(); c.fill();
+    c.strokeStyle='#1f9d55'; c.lineWidth=2; c.beginPath(); c.moveTo(cx,cy); c.lineTo(ax,ay); c.stroke();
+    if(s>9){ c.fillStyle='#e9fff2'; c.font='700 11px Rubik, sans-serif'; c.textAlign='center'; c.textBaseline='middle'; c.fillText('SALIDA',ax+fx*(w+12),ay+fz*(w+12)); c.textBaseline='alphabetic'; } }
   // objetivos
   const st=E.map.start, [sx,sy]=toS(st.x,st.z); c.save(); c.translate(sx,sy); c.rotate(st.r*D2R); c.fillStyle='#5fd3c3'; c.beginPath(); c.moveTo(0,-0.6*s); c.lineTo(0.38*s,0.4*s); c.lineTo(0,0.2*s); c.lineTo(-0.38*s,0.4*s); c.closePath(); c.fill(); c.restore();
   const ob=E.map.obj, ol=[]; if(ob.capsule) ol.push([ob.capsule,'C','Cápsula']);
