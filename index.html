@@ -368,11 +368,11 @@ const TYPES={
   cajas:{kind:'point',label:'Cajas',w:.9,d:.9,h:1.2}, tele:{kind:'point',label:'Tele',w:1.6,d:.1,h:0}, letrero:{kind:'point',label:'Letrero',w:1.4,d:.1,h:0},
   pizarra:{kind:'point',label:'Pizarra',w:1.7,d:.6,h:1.9}, puerta:{kind:'point',label:'Puerta',w:.95,d:.06,h:0}, persona:{kind:'point',label:'Persona sentada',w:.5,d:.5,h:1.3}, extintor:{kind:'point',label:'Extintor',w:.3,d:.3,h:.75}
 };
-const OBJ_LABEL={start:'Inicio',capsule:'Cápsula',machine:'Cafetera',desk:'Tu escritorio'};
+const OBJ_LABEL={start:'Inicio y tu escritorio',capsule:'Cápsula',machine:'Cafetera',desk:'Tu escritorio'};
 
 const ORIGINAL={v:1,name:'Etapa 1 · original',size:{w:32,d:22},
   start:{x:-10.8,z:8.6,r:0},
-  obj:{capsule:{x:-15.4,z:-8.6,r:90},machines:[{x:15.6,z:7,r:270}],desk:{x:-10.8,z:7.42,r:180}},
+  obj:{capsule:{x:-15.4,z:-8.6,r:90},machines:[{x:15.6,z:7,r:270}],desk:{x:-10.8,z:8.6,r:0}},
   items:[
     {t:'piso',mat:'baldosa',x0:9,z0:3,x1:16,z1:11},{t:'piso',mat:'cemento',x0:-16,z0:-11,x1:-11,z1:-6},{t:'piso',mat:'madera',x0:9,z0:-11,x1:16,z1:-3},
     {t:'muro',x0:-16,z0:-6,x1:-11,z1:-6},{t:'muro',x0:-11,z0:-11,x1:-11,z1:-9.5},{t:'muro',x0:-11,z0:-8,x1:-11,z1:-6},
@@ -403,7 +403,7 @@ const ORIGINAL={v:1,name:'Etapa 1 · original',size:{w:32,d:22},
 
 const ETAPA2={v:1,name:'Etapa 2 · La U',size:{w:40,d:28},
   start:{x:-18.1,z:0.2,r:90},
-  obj:{capsule:null,machines:[{x:19.5,z:4,r:270},{x:-19.5,z:9,r:90},{x:0,z:-13.45,r:180}],desk:{x:-17.02,z:0.2,r:270}},
+  obj:{capsule:null,machines:[{x:19.5,z:4,r:270},{x:-19.5,z:9,r:90},{x:0,z:-13.45,r:180}],desk:{x:-18.1,z:0.2,r:90}},
   items:[
     {t:'piso',mat:'baldosa',x0:-20,z0:4,x1:-11,z1:14},{t:'piso',mat:'madera',x0:11,z0:-14,x1:20,z1:-6},{t:'piso',mat:'madera',x0:11,z0:6,x1:20,z1:14},
     {t:'nucleo',x0:-11,z0:-4,x1:11,z1:14},
@@ -432,7 +432,7 @@ const ETAPA2={v:1,name:'Etapa 2 · La U',size:{w:40,d:28},
     {name:'Claudius Hurtado',look:'mauricio',speed:1.25,loop:false,path:[{x:-13,z:-6.5,w:2,face:90,sweep:30},{x:-12.8,z:3,w:0,face:180,sweep:0},{x:-13,z:5.5,w:0,face:180,sweep:0},{x:-18,z:9,w:4,face:270,sweep:20}]}
   ]};
 /* Etapa 3 · Piso 9 — mapa afinado por Daniel en el editor (26-11-2026) */
-const ETAPA3={"v":1,"name":"Etapa 3 · Piso 9","estilo":"loft","size":{"w":46,"d":24},"start":{"x":-0.7,"z":6.9,"r":90},"obj":{"capsule":null,"machines":[{"x":-15.1,"z":5.58,"r":180},{"x":-14.92,"z":-2.9,"r":90},{"x":10.1,"z":1.74,"r":180}],"desk":{"x":-13.62,"z":10.75,"r":270}},"items":[{"t":"piso","mat":"madera","x0":-13.5,"z0":-12,"x1":3,"z1":-2.5},{"t":"piso","mat":"baldosa","x0":-15.25,"z0":-4.5,"x1":-9.5,"z1":0},{"t":"nucleo","x0":-23,"z0":-12,"x1":-15.5,"z1":3},{"t":"nucleo","x0":-15.25,"z0":-12,"x1":-13,"z1":-4.5},{"t":"nucleo","x0":-15.25,"z0":0,"x1":-11.5,"z1":3.75},{"t":"nucleo","x0":-11.5,"z0":0,"x1":-9.5,"z1":3.5},{"t":"nucleo","x0":-9.5,"z0":-2.75,"x1":-9.25,"z1":5.75},{"t":"nucleo","x0":-9.25,"z0":-2.75,"x1":3,"z1":-2.4},{"t":"nucleo","x0":-9.25,"z0":1.75,"x1":4.5,"z1":5.75},{"t":"piso","mat":"baldosa","x0":-9.25,"z0":-2.4,"x1":3,"z1":1.75},{"t":"vidrio","x0":3,"z0":-2.4,"x1":3,"z1":1.75},{"t":"puerta","x":-7.6,"z":-2.35,"r":180,"text":"ASCENSOR"},{"t":"puerta","x":-5.4,"z":-2.35,"r":180,"text":"ASCENSOR"},{"t":"puerta","x":-3.2,"z":-2.35,"r":180,"text":"ASCENSOR"},{"t":"puerta","x":-1,"z":-2.35,"r":180,"text":"ASCENSOR"},{"t":"puerta","x":1.2,"z":-2.35,"r":180,"text":"ASCENSOR"},{"t":"letrero","x":-9.7,"z":-0.8,"r":270,"text":"Love"},{"t":"planta_alta","x":2.55,"z":1.35,"r":0},{"t":"planta_alta","x":-8.8,"z":1.35,"r":0},{"t":"nucleo","x0":-19,"z0":3,"x1":-9.5,"z1":5},{"t":"nucleo","x0":4.5,"z0":1.75,"x1":7,"z1":5.75},{"t":"muro","x0":7,"z0":0.25,"x1":7,"z1":1.75},{"t":"nucleo","x0":8.6,"z0":2.6,"x1":15,"z1":5.75},{"t":"muro","x0":8.7,"z0":0.4,"x1":8.7,"z1":2.6},{"t":"muro","x0":7,"z0":0.5,"x1":8.6,"z1":0.5},{"t":"puerta","x":7.05,"z":2.4,"r":90,"text":"WC"},{"t":"puerta","x":7.05,"z":3.6,"r":90,"text":"WC"},{"t":"puerta","x":7.05,"z":4.8,"r":90,"text":"WC"},{"t":"puerta","x":8.55,"z":2.4,"r":270,"text":"WC"},{"t":"puerta","x":8.55,"z":3.6,"r":270,"text":"WC"},{"t":"puerta","x":8.55,"z":4.8,"r":270,"text":"WC"},{"t":"letrero","x":7.8,"z":0.55,"r":180,"text":"BAÑOS"},{"t":"vidrio","x0":-19,"z0":5,"x1":-19,"z1":6},{"t":"muro","x0":-23,"z0":7.25,"x1":-18.75,"z1":7.25},{"t":"mesa","x0":-21.7,"z0":4,"x1":-20.5,"z1":6},{"t":"tele","x":-20.85,"z":7,"r":0},{"t":"vidrio","x0":-18.75,"z0":8.1,"x1":-18.75,"z1":12},{"t":"mesa","x0":-22.5,"z0":8.8,"x1":-20.5,"z1":10},{"t":"tele","x":-20.85,"z":7.6,"r":180},{"t":"planta_alta","x":-22.55,"z":7.7,"r":0},{"t":"archivo","x0":-21.3,"z0":11.45,"x1":-19.6,"z1":11.85},{"t":"cubiculos","x0":-16.7,"z0":8.15,"x1":-15.1,"z1":11.75,"gente":0.3},{"t":"cubiculos","x0":-12.8,"z0":8.15,"x1":-11.2,"z1":11.75,"gente":0.3},{"t":"cubiculos","x0":-8.9,"z0":8.15,"x1":-7.3,"z1":11.75,"gente":0.3},{"t":"cubiculos","x0":-4.9,"z0":9.15,"x1":-3.3,"z1":11.55,"gente":0.3},{"t":"cubiculos","x0":-1.5,"z0":9.15,"x1":0.1,"z1":11.55,"gente":0.3},{"t":"cubiculos","x0":1.9,"z0":9.15,"x1":3.5,"z1":11.55,"gente":0.3},{"t":"cubiculos","x0":8.9,"z0":8.15,"x1":10.5,"z1":11.75,"gente":0.3},{"t":"cubiculos","x0":12.3,"z0":8.15,"x1":13.9,"z1":11.75,"gente":0.3},{"t":"cubiculos","x0":15.7,"z0":8.15,"x1":17.3,"z1":11.75,"gente":0.3},{"t":"pilar","x":-5.8,"z":11.5,"r":0},{"t":"pilar","x":0.9,"z":11.5,"r":0},{"t":"pizarra","x":-16.4,"z":5.1,"r":180},{"t":"extintor","x":-14,"z":5.45,"r":180},{"t":"planta_alta","x":-9.9,"z":5.6,"r":0},{"t":"letrero","x":-17.8,"z":4.8,"r":180,"text":"SALA 5 · CHISPA"},{"t":"letrero","x":-12.7,"z":4.8,"r":180,"text":"SALA 4 · CLARIDAD"},{"t":"letrero","x":-10.4,"z":4.8,"r":180,"text":"SALA 6"},{"t":"letrero","x":-2,"z":5.8,"r":180,"text":"LOVE"},{"t":"letrero","x":-18.7,"z":9.6,"r":90,"text":"GERENCIA"},{"t":"letrero","x":11.8,"z":5.8,"r":180,"text":"SALA GABO"},{"t":"letrero","x":11.8,"z":2.55,"r":0,"text":"IMPRESIÓN"},{"t":"impresora","x":-7.8,"z":6.25,"r":0},{"t":"dispensador","x":16.2,"z":0.4,"r":0},{"t":"vidrio","x0":15.9,"z0":2.6,"x1":15.9,"z1":2.95},{"t":"vidrio","x0":15.9,"z0":3.8,"x1":15.9,"z1":4.5},{"t":"vidrio","x0":15.9,"z0":5.35,"x1":15.9,"z1":5.75},{"t":"muro","x0":15,"z0":2.6,"x1":15.9,"z1":2.6},{"t":"muro","x0":15,"z0":4.15,"x1":15.9,"z1":4.15},{"t":"vidrio","x0":15,"z0":5.75,"x1":15.9,"z1":5.75},{"t":"repisa","x0":15.1,"z0":2.8,"x1":15.5,"z1":3.95},{"t":"repisa","x0":15.1,"z0":4.35,"x1":15.5,"z1":5.55},{"t":"letrero","x":15.95,"z":3.4,"r":90,"text":"SALA 2"},{"t":"letrero","x":15.95,"z":4.9,"r":90,"text":"SALA 1"},{"t":"vidrio","x0":19.25,"z0":-4,"x1":19.25,"z1":1},{"t":"vidrio","x0":19.25,"z0":2.1,"x1":19.25,"z1":5.75},{"t":"muro","x0":19.25,"z0":5.75,"x1":23,"z1":5.75},{"t":"mesa","x0":20.3,"z0":-2,"x1":21.5,"z1":4.9},{"t":"tele","x":22.85,"z":2.8,"r":270},{"t":"letrero","x":19.2,"z":3.9,"r":270,"text":"SALA 11 "},{"t":"vidrio","x0":19.25,"z0":6.95,"x1":19.25,"z1":12},{"t":"mesa","x0":20.5,"z0":7,"x1":22.6,"z1":8.1},{"t":"planta_alta","x":22.5,"z":6.3,"r":0},{"t":"archivo","x0":0.2,"z0":5.95,"x1":1.9,"z1":6.35},{"t":"letrero","x":19.2,"z":9,"r":270,"text":"GERENCIA GENERAL"},{"t":"vidrio","x0":11,"z0":-6,"x1":11,"z1":-1},{"t":"vidrio","x0":11,"z0":-0.9,"x1":14,"z1":-0.9},{"t":"vidrio","x0":15.6,"z0":-5,"x1":15.6,"z1":-1},{"t":"mesa","x0":11.6,"z0":-3.55,"x1":15,"z1":-2.5},{"t":"letrero","x":12,"z":-0.85,"r":180,"text":"SALA 10"},{"t":"vidrio","x0":15.6,"z0":-0.9,"x1":17,"z1":-0.9},{"t":"vidrio","x0":17.9,"z0":0.1,"x1":19.25,"z1":0.1},{"t":"mesa","x0":16.4,"z0":-2.85,"x1":18.5,"z1":-2},{"t":"letrero","x":18.6,"z":0.15,"r":180,"text":"SALA 8 "},{"t":"mesa","x0":9.9,"z0":-1.3,"x1":10.7,"z1":-0.8},{"t":"planta_alta","x":10.6,"z":-2.6,"r":0},{"t":"meson","x0":4.2,"z0":0.6,"x1":6.2,"z1":1.2},{"t":"persona","x":5.2,"z":1.48,"r":0},{"t":"letrero","x":5.2,"z":1.7,"r":0,"text":"RECEPCIÓN"},{"t":"planta_alta","x":3.35,"z":-1.9,"r":0},{"t":"planta_alta","x":9.9,"z":-5.91,"r":0},{"t":"mesa","x0":-11.1,"z0":-10,"x1":-10.5,"z1":-5.5},{"t":"mesa","x0":-8,"z0":-7,"x1":-2.5,"z1":-5.5},{"t":"mesa","x0":-0.7,"z0":-4.1,"x1":0.5,"z1":-3.5},{"t":"planta","x":-6,"z":-2.97,"r":0},{"t":"planta_alta","x":-5.9,"z":-9.47,"r":0},{"t":"planta_alta","x":-12.3,"z":-8.36,"r":0},{"t":"tele","x":-4,"z":-2.8,"r":0},{"t":"letrero","x":-8,"z":-2.8,"r":0,"text":"LOUNGE"},{"t":"meson","x0":-15.25,"z0":-4.4,"x1":-14.6,"z1":-3.6},{"t":"meson","x0":-15.25,"z0":-2.2,"x1":-14.6,"z1":-1.1},{"t":"refri","x":-14.85,"z":-0.45,"r":90},{"t":"maquina","x":-12.2,"z":-0.55,"r":0},{"t":"dispensador","x":-12,"z":-4.1,"r":0},{"t":"mesa","x0":-14,"z0":-2.5,"x1":-13,"z1":-1.8},{"t":"letrero","x":-14,"z":-4.45,"r":180,"text":"COCINA"},{"t":"ventana","x0":-13.25,"z0":-12,"x1":22.5,"z1":-3},{"t":"meson","x0":21,"z0":10.5,"x1":21.5,"z1":12}],"bosses":[{"name":"Daniel Jara","look":"gonzalo","speed":1,"loop":false,"path":[{"x":20,"z":7.2,"w":3,"face":270,"sweep":30},{"x":20,"z":11.2,"w":3,"face":270,"sweep":30}]},{"name":"Edison Flaco","look":"alexandro","speed":1,"loop":false,"path":[{"x":-19.6,"z":10.6,"w":4,"face":90,"sweep":25},{"x":-19.6,"z":8.0,"w":3,"face":90,"sweep":30}]},{"name":"Martin Lion","look":"ricardo","speed":1.3,"loop":false,"path":[{"x":-17.6,"z":6.95,"w":3,"face":90,"sweep":30},{"x":7.8,"z":6.95,"w":2,"face":0,"sweep":20},{"x":18.4,"z":6.95,"w":3,"face":270,"sweep":30}]},{"name":"Claudius Hurtado","look":"mauricio","speed":1.2,"loop":false,"path":[{"x":-12.2,"z":-2.6,"w":3,"face":270,"sweep":30},{"x":-11.3,"z":-3.0,"w":0,"face":90,"sweep":0},{"x":-11.3,"z":-4.6,"w":0,"face":90,"sweep":0},{"x":3.6,"z":-4.5,"w":2,"face":180,"sweep":30},{"x":4.3,"z":-2.95,"w":0,"face":90,"sweep":0},{"x":7,"z":-2.7,"w":0,"face":90,"sweep":0},{"x":9.3,"z":-2.6,"w":0,"face":180,"sweep":0},{"x":9.3,"z":0.8,"w":0,"face":90,"sweep":0},{"x":14.5,"z":1.3,"w":3,"face":0,"sweep":30}]}]};
+const ETAPA3={"v":1,"name":"Etapa 3 · Piso 9","estilo":"loft","size":{"w":46,"d":24},"start":{"x":-0.7,"z":6.9,"r":90},"obj":{"capsule":null,"machines":[{"x":-15.1,"z":5.58,"r":180},{"x":-14.92,"z":-2.9,"r":90},{"x":10.1,"z":1.74,"r":180}],"desk":{"x":-0.7,"z":6.9,"r":90}},"items":[{"t":"piso","mat":"madera","x0":-13.5,"z0":-12,"x1":3,"z1":-2.5},{"t":"piso","mat":"baldosa","x0":-15.25,"z0":-4.5,"x1":-9.5,"z1":0},{"t":"nucleo","x0":-23,"z0":-12,"x1":-15.5,"z1":3},{"t":"nucleo","x0":-15.25,"z0":-12,"x1":-13,"z1":-4.5},{"t":"nucleo","x0":-15.25,"z0":0,"x1":-11.5,"z1":3.75},{"t":"nucleo","x0":-11.5,"z0":0,"x1":-9.5,"z1":3.5},{"t":"nucleo","x0":-9.5,"z0":-2.75,"x1":-9.25,"z1":5.75},{"t":"nucleo","x0":-9.25,"z0":-2.75,"x1":3,"z1":-2.4},{"t":"nucleo","x0":-9.25,"z0":1.75,"x1":4.5,"z1":5.75},{"t":"piso","mat":"baldosa","x0":-9.25,"z0":-2.4,"x1":3,"z1":1.75},{"t":"vidrio","x0":3,"z0":-2.4,"x1":3,"z1":1.75},{"t":"puerta","x":-7.6,"z":-2.35,"r":180,"text":"ASCENSOR"},{"t":"puerta","x":-5.4,"z":-2.35,"r":180,"text":"ASCENSOR"},{"t":"puerta","x":-3.2,"z":-2.35,"r":180,"text":"ASCENSOR"},{"t":"puerta","x":-1,"z":-2.35,"r":180,"text":"ASCENSOR"},{"t":"puerta","x":1.2,"z":-2.35,"r":180,"text":"ASCENSOR"},{"t":"letrero","x":-9.7,"z":-0.8,"r":270,"text":"Love"},{"t":"planta_alta","x":2.55,"z":1.35,"r":0},{"t":"planta_alta","x":-8.8,"z":1.35,"r":0},{"t":"nucleo","x0":-19,"z0":3,"x1":-9.5,"z1":5},{"t":"nucleo","x0":4.5,"z0":1.75,"x1":7,"z1":5.75},{"t":"muro","x0":7,"z0":0.25,"x1":7,"z1":1.75},{"t":"nucleo","x0":8.6,"z0":2.6,"x1":15,"z1":5.75},{"t":"muro","x0":8.7,"z0":0.4,"x1":8.7,"z1":2.6},{"t":"muro","x0":7,"z0":0.5,"x1":8.6,"z1":0.5},{"t":"puerta","x":7.05,"z":2.4,"r":90,"text":"WC"},{"t":"puerta","x":7.05,"z":3.6,"r":90,"text":"WC"},{"t":"puerta","x":7.05,"z":4.8,"r":90,"text":"WC"},{"t":"puerta","x":8.55,"z":2.4,"r":270,"text":"WC"},{"t":"puerta","x":8.55,"z":3.6,"r":270,"text":"WC"},{"t":"puerta","x":8.55,"z":4.8,"r":270,"text":"WC"},{"t":"letrero","x":7.8,"z":0.55,"r":180,"text":"BAÑOS"},{"t":"vidrio","x0":-19,"z0":5,"x1":-19,"z1":6},{"t":"muro","x0":-23,"z0":7.25,"x1":-18.75,"z1":7.25},{"t":"mesa","x0":-21.7,"z0":4,"x1":-20.5,"z1":6},{"t":"tele","x":-20.85,"z":7,"r":0},{"t":"vidrio","x0":-18.75,"z0":8.1,"x1":-18.75,"z1":12},{"t":"mesa","x0":-22.5,"z0":8.8,"x1":-20.5,"z1":10},{"t":"tele","x":-20.85,"z":7.6,"r":180},{"t":"planta_alta","x":-22.55,"z":7.7,"r":0},{"t":"archivo","x0":-21.3,"z0":11.45,"x1":-19.6,"z1":11.85},{"t":"cubiculos","x0":-16.7,"z0":8.15,"x1":-15.1,"z1":11.75,"gente":0.3},{"t":"cubiculos","x0":-12.8,"z0":8.15,"x1":-11.2,"z1":11.75,"gente":0.3},{"t":"cubiculos","x0":-8.9,"z0":8.15,"x1":-7.3,"z1":11.75,"gente":0.3},{"t":"cubiculos","x0":-4.9,"z0":9.15,"x1":-3.3,"z1":11.55,"gente":0.3},{"t":"cubiculos","x0":-1.5,"z0":9.15,"x1":0.1,"z1":11.55,"gente":0.3},{"t":"cubiculos","x0":1.9,"z0":9.15,"x1":3.5,"z1":11.55,"gente":0.3},{"t":"cubiculos","x0":8.9,"z0":8.15,"x1":10.5,"z1":11.75,"gente":0.3},{"t":"cubiculos","x0":12.3,"z0":8.15,"x1":13.9,"z1":11.75,"gente":0.3},{"t":"cubiculos","x0":15.7,"z0":8.15,"x1":17.3,"z1":11.75,"gente":0.3},{"t":"pilar","x":-5.8,"z":11.5,"r":0},{"t":"pilar","x":0.9,"z":11.5,"r":0},{"t":"pizarra","x":-16.4,"z":5.1,"r":180},{"t":"extintor","x":-14,"z":5.45,"r":180},{"t":"planta_alta","x":-9.9,"z":5.6,"r":0},{"t":"letrero","x":-17.8,"z":4.8,"r":180,"text":"SALA 5 · CHISPA"},{"t":"letrero","x":-12.7,"z":4.8,"r":180,"text":"SALA 4 · CLARIDAD"},{"t":"letrero","x":-10.4,"z":4.8,"r":180,"text":"SALA 6"},{"t":"letrero","x":-2,"z":5.8,"r":180,"text":"LOVE"},{"t":"letrero","x":-18.7,"z":9.6,"r":90,"text":"GERENCIA"},{"t":"letrero","x":11.8,"z":5.8,"r":180,"text":"SALA GABO"},{"t":"letrero","x":11.8,"z":2.55,"r":0,"text":"IMPRESIÓN"},{"t":"impresora","x":-7.8,"z":6.25,"r":0},{"t":"dispensador","x":16.2,"z":0.4,"r":0},{"t":"vidrio","x0":15.9,"z0":2.6,"x1":15.9,"z1":2.95},{"t":"vidrio","x0":15.9,"z0":3.8,"x1":15.9,"z1":4.5},{"t":"vidrio","x0":15.9,"z0":5.35,"x1":15.9,"z1":5.75},{"t":"muro","x0":15,"z0":2.6,"x1":15.9,"z1":2.6},{"t":"muro","x0":15,"z0":4.15,"x1":15.9,"z1":4.15},{"t":"vidrio","x0":15,"z0":5.75,"x1":15.9,"z1":5.75},{"t":"repisa","x0":15.1,"z0":2.8,"x1":15.5,"z1":3.95},{"t":"repisa","x0":15.1,"z0":4.35,"x1":15.5,"z1":5.55},{"t":"letrero","x":15.95,"z":3.4,"r":90,"text":"SALA 2"},{"t":"letrero","x":15.95,"z":4.9,"r":90,"text":"SALA 1"},{"t":"vidrio","x0":19.25,"z0":-4,"x1":19.25,"z1":1},{"t":"vidrio","x0":19.25,"z0":2.1,"x1":19.25,"z1":5.75},{"t":"muro","x0":19.25,"z0":5.75,"x1":23,"z1":5.75},{"t":"mesa","x0":20.3,"z0":-2,"x1":21.5,"z1":4.9},{"t":"tele","x":22.85,"z":2.8,"r":270},{"t":"letrero","x":19.2,"z":3.9,"r":270,"text":"SALA 11 "},{"t":"vidrio","x0":19.25,"z0":6.95,"x1":19.25,"z1":12},{"t":"mesa","x0":20.5,"z0":7,"x1":22.6,"z1":8.1},{"t":"planta_alta","x":22.5,"z":6.3,"r":0},{"t":"archivo","x0":0.2,"z0":5.95,"x1":1.9,"z1":6.35},{"t":"letrero","x":19.2,"z":9,"r":270,"text":"GERENCIA GENERAL"},{"t":"vidrio","x0":11,"z0":-6,"x1":11,"z1":-1},{"t":"vidrio","x0":11,"z0":-0.9,"x1":14,"z1":-0.9},{"t":"vidrio","x0":15.6,"z0":-5,"x1":15.6,"z1":-1},{"t":"mesa","x0":11.6,"z0":-3.55,"x1":15,"z1":-2.5},{"t":"letrero","x":12,"z":-0.85,"r":180,"text":"SALA 10"},{"t":"vidrio","x0":15.6,"z0":-0.9,"x1":17,"z1":-0.9},{"t":"vidrio","x0":17.9,"z0":0.1,"x1":19.25,"z1":0.1},{"t":"mesa","x0":16.4,"z0":-2.85,"x1":18.5,"z1":-2},{"t":"letrero","x":18.6,"z":0.15,"r":180,"text":"SALA 8 "},{"t":"mesa","x0":9.9,"z0":-1.3,"x1":10.7,"z1":-0.8},{"t":"planta_alta","x":10.6,"z":-2.6,"r":0},{"t":"meson","x0":4.2,"z0":0.6,"x1":6.2,"z1":1.2},{"t":"persona","x":5.2,"z":1.48,"r":0},{"t":"letrero","x":5.2,"z":1.7,"r":0,"text":"RECEPCIÓN"},{"t":"planta_alta","x":3.35,"z":-1.9,"r":0},{"t":"planta_alta","x":9.9,"z":-5.91,"r":0},{"t":"mesa","x0":-11.1,"z0":-10,"x1":-10.5,"z1":-5.5},{"t":"mesa","x0":-8,"z0":-7,"x1":-2.5,"z1":-5.5},{"t":"mesa","x0":-0.7,"z0":-4.1,"x1":0.5,"z1":-3.5},{"t":"planta","x":-6,"z":-2.97,"r":0},{"t":"planta_alta","x":-5.9,"z":-9.47,"r":0},{"t":"planta_alta","x":-12.3,"z":-8.36,"r":0},{"t":"tele","x":-4,"z":-2.8,"r":0},{"t":"letrero","x":-8,"z":-2.8,"r":0,"text":"LOUNGE"},{"t":"meson","x0":-15.25,"z0":-4.4,"x1":-14.6,"z1":-3.6},{"t":"meson","x0":-15.25,"z0":-2.2,"x1":-14.6,"z1":-1.1},{"t":"refri","x":-14.85,"z":-0.45,"r":90},{"t":"maquina","x":-12.2,"z":-0.55,"r":0},{"t":"dispensador","x":-12,"z":-4.1,"r":0},{"t":"mesa","x0":-14,"z0":-2.5,"x1":-13,"z1":-1.8},{"t":"letrero","x":-14,"z":-4.45,"r":180,"text":"COCINA"},{"t":"ventana","x0":-13.25,"z0":-12,"x1":22.5,"z1":-3},{"t":"meson","x0":21,"z0":10.5,"x1":21.5,"z1":12}],"bosses":[{"name":"Daniel Jara","look":"gonzalo","speed":1,"loop":false,"path":[{"x":20,"z":7.2,"w":3,"face":270,"sweep":30},{"x":20,"z":11.2,"w":3,"face":270,"sweep":30}]},{"name":"Edison Flaco","look":"alexandro","speed":1,"loop":false,"path":[{"x":-19.6,"z":10.6,"w":4,"face":90,"sweep":25},{"x":-19.6,"z":8.0,"w":3,"face":90,"sweep":30}]},{"name":"Martin Lion","look":"ricardo","speed":1.3,"loop":false,"path":[{"x":-17.6,"z":6.95,"w":3,"face":90,"sweep":30},{"x":7.8,"z":6.95,"w":2,"face":0,"sweep":20},{"x":18.4,"z":6.95,"w":3,"face":270,"sweep":30}]},{"name":"Claudius Hurtado","look":"mauricio","speed":1.2,"loop":false,"path":[{"x":-12.2,"z":-2.6,"w":3,"face":270,"sweep":30},{"x":-11.3,"z":-3.0,"w":0,"face":90,"sweep":0},{"x":-11.3,"z":-4.6,"w":0,"face":90,"sweep":0},{"x":3.6,"z":-4.5,"w":2,"face":180,"sweep":30},{"x":4.3,"z":-2.95,"w":0,"face":90,"sweep":0},{"x":7,"z":-2.7,"w":0,"face":90,"sweep":0},{"x":9.3,"z":-2.6,"w":0,"face":180,"sweep":0},{"x":9.3,"z":0.8,"w":0,"face":90,"sweep":0},{"x":14.5,"z":1.3,"w":3,"face":0,"sweep":30}]}]};
 const BUILTIN={original:ORIGINAL,etapa2:ETAPA2,etapa3:ETAPA3};
 const isBuiltin=id=>Object.prototype.hasOwnProperty.call(BUILTIN,id);
 
@@ -455,6 +455,7 @@ function sanitizeMap(m){
     obj:{capsule:('capsule' in ob)?(ob.capsule?pt(ob.capsule,ORIGINAL.obj.capsule):null):pt(null,ORIGINAL.obj.capsule),
       machines:(Array.isArray(ob.machines)?ob.machines:(ob.machine?[ob.machine]:[])).slice(0,6).map(q=>pt(q,ORIGINAL.obj.machines[0])),desk:pt(ob.desk,ORIGINAL.obj.desk)},items:[],bosses:[]};
   if(!out.obj.machines.length) out.obj.machines=[pt(null,ORIGINAL.obj.machines[0])];
+  out.obj.desk={x:out.start.x,z:out.start.z,r:out.start.r};
   for(const it of (Array.isArray(m.items)?m.items:[]).slice(0,900)){
     if(!it||typeof it!=='object'||!Object.prototype.hasOwnProperty.call(TYPES,it.t)) continue;
     const T=TYPES[it.t];
@@ -487,7 +488,7 @@ function layout(map){
   const W=map.size.w,D=map.size.d,hx=W/2,hz=D/2,solids=[],props=[];
   const S=(x,z,w,d,h,c,blocks)=>{ solids.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,h,c,blocks:blocks!==false}); };
   S(0,-hz,W+0.3,0.3,3.2,'wall'); S(0,hz,W+0.3,0.3,3.2,'wall'); S(-hx,0,0.3,D+0.3,3.2,'wall'); S(hx,0,0.3,D+0.3,3.2,'wall');
-  const deskP=map.obj.desk, loft=map.estilo==='loft'; let deskUsed=false;
+  const deskP=map.start, loft=map.estilo==='loft'; let deskUsed=false;
   map.items.forEach((it,idx)=>{
     const T=TYPES[it.t]; if(!T) return;
     if(T.kind==='line'&&isDiag(it)){
@@ -536,12 +537,12 @@ function layout(map){
           for(let i=0;i<=n;i++) part(-len/2+i*2.4,(vmin+vmax)/2,0.08,vmax-vmin); }
           for(let i=0;i<n;i++) for(const s of (dbl?[-1,1]:[1])){
             const cu=-len/2+(i+0.5)*PT, [dx,dz]=P(cu,vs+s*0.42), [chx,chz]=P(cu,vs+s*CH);
-            const mine=!deskUsed&&Math.hypot(dx-deskP.x,dz-deskP.z)<0.75; if(mine) deskUsed=true;
+            const mine=!deskUsed&&Math.hypot(dx-deskP.x,dz-deskP.z)<1.6; if(mine) deskUsed=true;
             const [dw,dd]=SZ(loft?PT-0.03:1.8,0.7); S(dx,dz,dw,dd,0.76,'low');
             props.push({k:'desk',x:dx,z:dz,yaw:YW(0,s),mine,w:loft?PT-0.03:1.8});
             const cx2=mine?(loft?P(cu+0.25,vs+s*1.25):P(cu+0.55,vs+s*1.3)):[chx,chz];
             props.push({k:'chair',x:cx2[0],z:cx2[1],yaw:YW(0,-s)});
-            if(!mine&&hrand(idx,i,s+2)<(it.gente===undefined?0.25:it.gente)){ S(chx,chz,0.6,0.6,1.3,'person'); props.push({k:'worker',x:chx,z:chz,yaw:YW(0,-s),seed:idx*31+i*3+s+2}); }
+            if(!mine&&Math.hypot(chx-deskP.x,chz-deskP.z)>0.95&&hrand(idx,i,s+2)<(it.gente===undefined?0.25:it.gente)){ S(chx,chz,0.6,0.6,1.3,'person'); props.push({k:'worker',x:chx,z:chz,yaw:YW(0,-s),seed:idx*31+i*3+s+2}); }
           }
           break; }
       }
@@ -555,8 +556,7 @@ function layout(map){
   const o=map.obj;
   if(o.capsule){ const [w,d]=fpOf(0.8,0.45,o.capsule.r); S(o.capsule.x,o.capsule.z,w,d,0.9,'obj'); props.push({k:'capsule',x:o.capsule.x,z:o.capsule.z,yaw:dirToYaw(o.capsule.r)}); }
   o.machines.forEach((q,i)=>{ const [w,d]=fpOf(1.2,0.65,q.r); S(q.x,q.z,w,d,0.92,'obj'); props.push({k:'machine',x:q.x,z:q.z,yaw:dirToYaw(q.r),idx:i}); });
-  if(!deskUsed){ const [w,d]=fpOf(1.8,0.7,o.desk.r), yaw=dirToYaw(o.desk.r); S(o.desk.x,o.desk.z,w,d,0.76,'low');
-    props.push({k:'desk',x:o.desk.x,z:o.desk.z,yaw,mine:true}); props.push({k:'chair',x:o.desk.x+Math.sin(yaw)*0.85+Math.cos(yaw)*0.5,z:o.desk.z+Math.cos(yaw)*0.85-Math.sin(yaw)*0.5,yaw:yaw+Math.PI}); }
+  // el escritorio es el punto de inicio: no se arma un mueble aparte
   return {size:{w:W,d:D},solids,props,start:map.start,obj:map.obj,bosses:map.bosses,estilo:loft?'loft':'clasico'};
 }
 
@@ -581,7 +581,7 @@ function validate(map,L){
   const st=map.start;
   if(!inMap(st)) out.push({lv:'err',msg:'El punto de inicio está fuera del mapa.',x:st.x,z:st.z});
   else if(pointHits(L.solids,st.x,st.z,0.3)) out.push({lv:'err',msg:'El punto de inicio quedó encima de un objeto.',x:st.x,z:st.z});
-  const objs=[]; if(map.obj.capsule) objs.push([map.obj.capsule,'la cápsula']); map.obj.machines.forEach((q,i)=>objs.push([q,map.obj.machines.length>1?'la cafetera '+(i+1):'la cafetera'])); objs.push([map.obj.desk,'tu escritorio']);
+  const objs=[]; if(map.obj.capsule) objs.push([map.obj.capsule,'la cápsula']); map.obj.machines.forEach((q,i)=>objs.push([q,map.obj.machines.length>1?'la cafetera '+(i+1):'la cafetera'])); 
   for(const [p,lab] of objs){ if(!inMap(p)) out.push({lv:'err',msg:`${lab[0].toUpperCase()+lab.slice(1)} quedó fuera del mapa.`,x:p.x,z:p.z}); }
   // alcance desde el inicio
   const step=0.25, nx=Math.ceil(W/step), nz=Math.ceil(D/step), ok=new Uint8Array(nx*nz), seen=new Uint8Array(nx*nz);
@@ -1001,7 +1001,7 @@ function createEngine(){
     });
     const o=LV.obj;
     const ms=o.machines;
-    OBJP={capsule:o.capsule?{x:o.capsule.x,y:1.85,z:o.capsule.z}:null,machines:ms.map(q=>({x:q.x,y:2.1,z:q.z})),desk:{x:o.desk.x,y:1.75,z:o.desk.z}};
+    OBJP={capsule:o.capsule?{x:o.capsule.x,y:1.85,z:o.capsule.z}:null,machines:ms.map(q=>({x:q.x,y:2.1,z:q.z})),desk:{x:LV.start.x,y:1.75,z:LV.start.z}};
     inter=[];
     if(o.capsule) inter.push({x:o.capsule.x,z:o.capsule.z,r:1.9,prompt:()=>P.capsule||P.coffee?null:'Tomar una cápsula de café',ready:()=>!P.capsule&&!P.coffee,
       act(){ P.capsule=true; rec(); sfx.pick(); toast(ms.length>1&&found<0?'Cápsula en mano. Ahora, encuentra la cafetera con café.':'Cápsula en mano. Ahora, a la cafetera.'); }});
@@ -1010,7 +1010,7 @@ function createEngine(){
       ready:()=>{ if(P.coffee) return false; if(found===i) return !o.capsule||P.capsule; return !checked.has(i); },
       act(){ if(found===i||checked.has(i)) return; if(i===working){ found=i; sfx.pick(); toast(o.capsule&&!P.capsule?'¡Esta tiene café! Ahora te falta la cápsula.':'¡Esta tiene café! Mantén E para prepararlo.'); }
         else { checked.add(i); sfx.empty(); toast('Sin café. Prueba otra cafetera.'); } }}));
-    inter.push({x:o.desk.x,z:o.desk.z,r:1.7,prompt:()=>P.coffee?'Dejar el café en tu escritorio':'Tu escritorio. Falta el café…',ready:()=>P.coffee,act(){ win(); }});
+    inter.push({x:LV.start.x,z:LV.start.z,r:1.7,prompt:()=>P.coffee?'Dejar el café en tu escritorio':'Tu escritorio. Falta el café…',ready:()=>P.coffee,act(){ win(); }});
     hud.cap.hidden=!o.capsule;
     STEPS=[];
     if(o.capsule) STEPS.push({label:'Saca una cápsula de café',done:()=>P.capsule||P.coffee,targets:()=>[OBJP.capsule]});
@@ -1110,7 +1110,7 @@ function createEngine(){
     $('wRank').textContent=game.spotted===0&&game.maxS<0.3?'★★★ Fantasma de oficina':game.spotted===0?'★★ Ninja del café':'★ Sobreviviente con taza';
     game.overlay=true; showScreen('win');
     try{ const o=LV.obj, sp=LV.start, hy=(a,b)=>Math.max(0,Math.hypot(a.x-b.x,a.z-b.z)-1.9);
-      const lb=Math.min(...o.machines.map(m=>((o.capsule?hy(sp,o.capsule)+hy(o.capsule,m):hy(sp,m))/SPEED.run)+BREW_TIME+hy(m,o.desk)/SPEED.walk));
+      const lb=Math.min(...o.machines.map(m=>((o.capsule?hy(sp,o.capsule)+hy(o.capsule,m):hy(sp,m))/SPEED.run)+BREW_TIME+hy(m,LV.start)/SPEED.walk));
       document.dispatchEvent(new CustomEvent('cafe-win',{detail:{m:current.name||'Mapa',t,s:game.spotted,st:game.spotted===0&&game.maxS<0.3?3:game.spotted===0?2:1,lb,fromEditor:current.fromEditor,ghost:ghostUsed,seq:run.seq,ruta:run.ruta.slice()}})); }catch(e){ console.error(e); } }
   $('retryBtn').addEventListener('click',restart); $('againBtn').addEventListener('click',restart); $('restartBtn').addEventListener('click',restart); $('resumeBtn').addEventListener('click',resume);
   let currentTarget=null;
@@ -1292,7 +1292,7 @@ const BUILTIN_NAME=Object.fromEntries(Object.entries(BUILTIN).map(([k,m])=>[k,m.
 function cloudEdit(){ return typeof ENV!=='undefined'&&ENV==='dev'; }
 let cloudBusy=false, cloudNext=null;
 async function cloudSave(id,map){
-  map.name=BUILTIN_NAME[id]; BUILTIN[id]=map; cloudNext={id,map};
+  map.name=BUILTIN_NAME[id]; map.obj.desk={x:map.start.x,z:map.start.z,r:map.start.r}; BUILTIN[id]=map; cloudNext={id,map};
   const say=t=>{ E.cloudState=t; if(E.id===id&&document.body.classList.contains('editing')) $('eSave').textContent=t; };
   if(cloudBusy) return; cloudBusy=true;
   while(cloudNext){ const job=cloudNext; cloudNext=null; say('Guardando en la nube…');
@@ -1399,8 +1399,8 @@ const TOOLS=[
   {g:'Objetos',id:'refri',label:'Refri',kind:'point',t:'refri',c:'#3f4855'},{g:'Objetos',id:'fotocopiadora',label:'Fotocopiadora',kind:'point',t:'fotocopiadora',c:'#8fa3b8'},
   {g:'Objetos',id:'impresora',label:'Impresora',kind:'point',t:'impresora',c:'#8fa3b8'},{g:'Objetos',id:'cajas',label:'Cajas',kind:'point',t:'cajas',c:'#8fa3b8'},
   {g:'Objetos',id:'tele',label:'Tele',kind:'point',t:'tele',c:'#5aa7d8'},{g:'Objetos',id:'persona',label:'Persona sentada',kind:'point',t:'persona',c:'#d98e5f'},{g:'Objetos',id:'puerta',label:'Puerta',kind:'point',t:'puerta',c:'#b98a5e'},{g:'Objetos',id:'pizarra',label:'Pizarra',kind:'point',t:'pizarra',c:'#e9edf0'},{g:'Objetos',id:'extintor',label:'Extintor',kind:'point',t:'extintor',c:'#d0312d'},{g:'Objetos',id:'letrero',label:'Letrero',kind:'point',t:'letrero',c:'#2b3442'},
-  {g:'Objetivos',id:'o_start',label:'Inicio',kind:'obj',key:'start',c:'#5fd3c3'},{g:'Objetivos',id:'o_cap',label:'Cápsula',kind:'obj',key:'capsule',c:'#5fd3c3'},
-  {g:'Objetivos',id:'o_mach',label:'Cafetera (agregar)',kind:'obj',key:'machine',c:'#5fd3c3'},{g:'Objetivos',id:'o_desk',label:'Tu escritorio',kind:'obj',key:'desk',c:'#5fd3c3'},
+  {g:'Objetivos',id:'o_start',label:'Inicio y tu escritorio',kind:'obj',key:'start',c:'#5fd3c3'},{g:'Objetivos',id:'o_cap',label:'Cápsula',kind:'obj',key:'capsule',c:'#5fd3c3'},
+  {g:'Objetivos',id:'o_mach',label:'Cafetera (agregar)',kind:'obj',key:'machine',c:'#5fd3c3'},
   {g:'Jefes',id:'ruta',label:'Ruta de jefe',kind:'route',c:'#ff7a59'}
 ];
 const TOOL_BY=Object.fromEntries(TOOLS.map(t=>[t.id,t]));
@@ -1479,7 +1479,7 @@ function contentBox(m){ let x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity; c
     if(T.kind==='line'){ add(it.x0,it.z0,0); add(it.x1,it.z1,0); }
     else if(T.kind==='rect'){ add(it.x0,it.z0,0); add(it.x1,it.z1,0); }
     else { const [w,d]=fpOf(T.w,T.d,it.r); x0=Math.min(x0,it.x-w/2); x1=Math.max(x1,it.x+w/2); z0=Math.min(z0,it.z-d/2); z1=Math.max(z1,it.z+d/2); } }
-  const o=m.obj; add(m.start.x,m.start.z,0.4); if(o.capsule) add(o.capsule.x,o.capsule.z,0.6); o.machines.forEach(q=>add(q.x,q.z,0.7)); add(o.desk.x,o.desk.z,0.9);
+  const o=m.obj; add(m.start.x,m.start.z,0.4); if(o.capsule) add(o.capsule.x,o.capsule.z,0.6); o.machines.forEach(q=>add(q.x,q.z,0.7));
   m.bosses.forEach(b=>b.path.forEach(w=>add(w.x,w.z,0.4))); return {x0,x1,z0,z1}; }
 function growToFit(){ const m=E.map; if(!m) return false; const W=m.size.w, D=m.size.d, b=contentBox(m), eps=0.01;
   if(b.x0>=-W/2-eps&&b.x1<=W/2+eps&&b.z0>=-D/2-eps&&b.z1<=D/2+eps) return false;
@@ -1563,7 +1563,6 @@ function hitTest(p){
   const st=E.map.start; if(Math.hypot(st.x-p.x,st.z-p.z)<0.6) return {kind:'obj',key:'start'};
   const ob=E.map.obj; if(ob.capsule&&Math.hypot(ob.capsule.x-p.x,ob.capsule.z-p.z)<0.65) return {kind:'obj',key:'capsule'};
   for(let i=0;i<ob.machines.length;i++){ const o=ob.machines[i]; if(Math.hypot(o.x-p.x,o.z-p.z)<0.65) return {kind:'obj',key:'machine',i}; }
-  if(Math.hypot(ob.desk.x-p.x,ob.desk.z-p.z)<0.65) return {kind:'obj',key:'desk'};
   let best=null, ba=1e9;
   for(let i=E.map.items.length-1;i>=0;i--){ const it=E.map.items[i], T=TYPES[it.t], b=itemBounds(it);
     if(p.x<b.x0||p.x>b.x1||p.z<b.z0||p.z>b.z1) continue;
@@ -1714,7 +1713,7 @@ function buildPanel(){
   else if(s.kind==='obj'){
     const nM=E.map.obj.machines.length;
     sec.append(el('h4',{text:s.key==='machine'&&nM>1?'Cafetera '+(s.i+1):OBJ_LABEL[s.key]}));
-    const help={start:'Donde partes y hacia dónde miras.',capsule:'Un mueble con la caja de cápsulas. El frente es por donde la tomas. Si la quitas, se parte directo a buscar la cafetera.',
+    const help={start:'Tu escritorio: aquí partes y aquí vuelves con el café. La flecha indica hacia dónde miras al partir.',capsule:'Un mueble con la caja de cápsulas. El frente es por donde la tomas. Si la quitas, se parte directo a buscar la cafetera.',
       machine:nM>1?`Hay ${nM} cafeteras: en cada partida se elige al azar cuál tiene café. El frente es por donde preparas el café.`:'Un mesón con la cafetera. Si agregas más, en cada partida solo una tendrá café.',
       desk:'Si lo pones dentro de un cubículo, usa ese escritorio. Si no, se arma uno suelto con su silla.'};
     sec.append(el('p',{text:help[s.key]})); sec.append(posFields(o));
@@ -1789,7 +1788,7 @@ function paint(){
   // objetivos
   const st=E.map.start, [sx,sy]=toS(st.x,st.z); c.save(); c.translate(sx,sy); c.rotate(st.r*D2R); c.fillStyle='#5fd3c3'; c.beginPath(); c.moveTo(0,-0.6*s); c.lineTo(0.38*s,0.4*s); c.lineTo(0,0.2*s); c.lineTo(-0.38*s,0.4*s); c.closePath(); c.fill(); c.restore();
   const ob=E.map.obj, ol=[]; if(ob.capsule) ol.push([ob.capsule,'C','Cápsula']);
-  ob.machines.forEach((q,i)=>ol.push([q,String(i+1),ob.machines.length>1?'Cafetera '+(i+1):'Cafetera'])); ol.push([ob.desk,'E','Tu escritorio']);
+  ob.machines.forEach((q,i)=>ol.push([q,String(i+1),ob.machines.length>1?'Cafetera '+(i+1):'Cafetera']));
   for(const [o,n,lab] of ol){ const [x,y]=toS(o.x,o.z), rr=Math.max(9,0.38*s); c.fillStyle='#5fd3c3'; c.beginPath(); c.arc(x,y,rr,0,TAU); c.fill();
     c.fillStyle='#0b2b28'; c.font=`800 ${Math.round(rr*1.1)}px Rubik, sans-serif`; c.textAlign='center'; c.textBaseline='middle'; c.fillText(n,x,y+1);
     const a=o.r*D2R; c.strokeStyle='#5fd3c3'; c.lineWidth=2; c.beginPath(); c.moveTo(x+Math.sin(a)*rr,y-Math.cos(a)*rr); c.lineTo(x+Math.sin(a)*(rr+8),y-Math.cos(a)*(rr+8)); c.stroke();
