@@ -1429,7 +1429,7 @@ const TOOLS=[
   {g:'Jefes',id:'ruta',label:'Ruta de jefe',kind:'route',c:'#ff7a59'}
 ];
 const TOOL_BY=Object.fromEntries(TOOLS.map(t=>[t.id,t]));
-const HINTS={select:'Haz clic para seleccionar y arrastra para mover. Arrastra los puntos blancos para cambiar el tamaño.',erase:'Haz clic en algo para borrarlo.',
+const HINTS={select:'Haz clic para seleccionar y arrastra para mover. Arrastra los puntos blancos para cambiar el tamaño. Arrastra los bordes del mapa para agrandarlo o achicarlo.',erase:'Haz clic en algo para borrarlo.',
   line:'Arrastra para dibujar. Sale recta si vas casi derecho; en cualquier otro ángulo queda diagonal. Deja huecos para las puertas.',rect:'Arrastra para dibujar el rectángulo.',point:'Haz clic para ponerlo. R lo gira.',
   obj:'Haz clic donde quieres este objetivo. Cada clic con Cafetera agrega una nueva. R lo gira.',route:'Clic agrega una parada después de la seleccionada. Arrastra las paradas para moverlas.'};
 const E={map:null,id:'original',meta:null,tool:'sel',sel:null,boss:0,view:{s:20,ox:0,oy:0},drag:null,hover:null,undo:[],redo:[],L:null,warns:[],focus:null,space:false,dirty:false,dismissed:new Set(),saveT:0,valT:0,fitted:false};
@@ -1511,11 +1511,24 @@ function growToFit(){ const m=E.map; if(!m) return false; const W=m.size.w, D=m.
   let nx0=Math.floor(Math.min(-W/2,b.x0)), nx1=Math.ceil(Math.max(W/2,b.x1)), nz0=Math.floor(Math.min(-D/2,b.z0)), nz1=Math.ceil(Math.max(D/2,b.z1));
   if((nx1-nx0)%2) { if(b.x0<-W/2) nx0--; else nx1++; } if((nz1-nz0)%2) { if(b.z0<-D/2) nz0--; else nz1++; }
   if(nx1-nx0>60||nz1-nz0>60){ toast('El mapa ya está en su tamaño máximo (60 m): no puede crecer más.'); return false; }
+  applyBounds(nx0,nx1,nz0,nz1);
+  toast(`El área creció a ${m.size.w} × ${m.size.d} m para que entre todo.`); return true; }
+function applyBounds(nx0,nx1,nz0,nz1){ const m=E.map;
   const cx=(nx0+nx1)/2, cz=(nz0+nz1)/2, sx=v=>r2(v-cx), sz=v=>r2(v-cz);
   for(const it of m.items){ if('x0' in it){ it.x0=sx(it.x0); it.x1=sx(it.x1); it.z0=sz(it.z0); it.z1=sz(it.z1); } else { it.x=sx(it.x); it.z=sz(it.z); } }
   const mv=q=>{ if(q){ q.x=sx(q.x); q.z=sz(q.z); } }; mv(m.start); mv(m.obj.capsule); m.obj.machines.forEach(mv); mv(m.obj.desk); m.bosses.forEach(bb=>bb.path.forEach(mv));
-  m.size={w:nx1-nx0,d:nz1-nz0}; E.view.ox+=cx*E.view.s; E.view.oy+=cz*E.view.s; $('eW').value=m.size.w; $('eD').value=m.size.d;
-  toast(`El área creció a ${m.size.w} × ${m.size.d} m para que entre todo.`); return true; }
+  m.size={w:nx1-nx0,d:nz1-nz0}; E.view.ox+=cx*E.view.s; E.view.oy+=cz*E.view.s; $('eW').value=m.size.w; $('eD').value=m.size.d; }
+/* bordes del mapa arrastrables */
+function borderHit(p){ if(!E.map) return null; const W=E.map.size.w, D=E.map.size.d, tol=Math.max(0.3,7/E.view.s);
+  const inX=p.x>-W/2-tol&&p.x<W/2+tol, inZ=p.z>-D/2-tol&&p.z<D/2+tol;
+  if(inZ&&Math.abs(p.x+W/2)<tol) return 'l'; if(inZ&&Math.abs(p.x-W/2)<tol) return 'r';
+  if(inX&&Math.abs(p.z+D/2)<tol) return 't'; if(inX&&Math.abs(p.z-D/2)<tol) return 'b'; return null; }
+function borderLimits(side){ const m=E.map, W=m.size.w, D=m.size.d, b=contentBox(m), x0=-W/2, x1=W/2, z0=-D/2, z1=D/2;
+  if(side==='l') return [x1-60, Math.min(Math.floor(b.x0+1e-6), x1-16)]; if(side==='r') return [Math.max(Math.ceil(b.x1-1e-6), x0+16), x0+60];
+  if(side==='t') return [z1-60, Math.min(Math.floor(b.z0+1e-6), z1-12)]; return [Math.max(Math.ceil(b.z1-1e-6), z0+12), z0+60]; }
+function borderBounds(d){ const W=E.map.size.w, D=E.map.size.d; let x0=-W/2,x1=W/2,z0=-D/2,z1=D/2;
+  if(d.side==='l') x0=d.v; if(d.side==='r') x1=d.v; if(d.side==='t') z0=d.v; if(d.side==='b') z1=d.v;
+  if((x1-x0)%2){ if(d.side==='l') x0--; else x1++; } if((z1-z0)%2){ if(d.side==='t') z0--; else z1++; } return [x0,x1,z0,z1]; }
 function changed(panel){ recompute(); scheduleSave(); if(panel!==false) buildPanel(); $('eUndo').disabled=!E.undo.length; $('eRedo').disabled=!E.redo.length; draw(); }
 function scheduleSave(){ E.dirty=true; if(E.meta.status==='afinado'&&E.meta.by==='claude'){ E.meta.by='daniel'; } $('eSave').textContent='Cambios sin guardar…'; clearTimeout(E.saveT); E.saveT=setTimeout(flushSave,900); }
 function flushSave(){
@@ -1611,6 +1624,7 @@ ecan.addEventListener('pointerdown',e=>{
   const tool=TOOL_BY[E.tool];
   if(tool.kind==='select'){
     const h=hitHandle(p); if(h){ E.drag={type:'handle',h:h.h,snapped:false}; return; }
+    const bs=borderHit(p); if(bs){ const W=E.map.size.w, D=E.map.size.d; E.drag={type:'border',side:bs,v:bs==='l'?-W/2:bs==='r'?W/2:bs==='t'?-D/2:D/2}; draw(); return; }
     E.sel=hitTest(p); buildPanel(); if(E.sel) E.drag={type:'move',last:snap(p,e.shiftKey),snapped:false}; draw(); return;
   }
   if(tool.kind==='erase'){ const hit=hitTest(p); if(hit){ snapshot(); if(deleteSel(hit)) changed(); else E.undo.pop(); } return; }
@@ -1633,7 +1647,8 @@ ecan.addEventListener('pointerdown',e=>{
 });
 ecan.addEventListener('pointermove',e=>{
   const p=mouseW(e); E.hover=p; const d=E.drag;
-  if(!d){ updateHint(p); draw(); return; }
+  if(!d){ const bh=TOOL_BY[E.tool].kind==='select'&&borderHit(p); ecan.style.cursor=bh?(bh==='l'||bh==='r'?'ew-resize':'ns-resize'):''; updateHint(p); draw(); return; }
+  if(d.type==='border'){ const [lo,hi]=borderLimits(d.side); d.v=clamp(Math.round(d.side==='l'||d.side==='r'?p.x:p.z),lo,hi); draw(); return; }
   if(d.type==='pan'){ E.view.ox=d.ox+(e.clientX-d.sx); E.view.oy=d.oy+(e.clientY-d.sy); draw(); return; }
   if(d.type==='create'){ d.b=snap(p,e.shiftKey); draw(); updateHint(p); return; }
   if(d.type==='move'){ const q=snap(p,e.shiftKey), dx=q.x-d.last.x, dz=q.z-d.last.z; if(dx||dz){ if(!d.snapped){ snapshot(); d.snapped=true; } moveSel(dx,dz); d.last=q; recompute(); scheduleSave(); draw(); } return; }
@@ -1646,6 +1661,8 @@ ecan.addEventListener('pointermove',e=>{
 });
 function endDrag(e){
   const d=E.drag; E.drag=null; if(!d) return;
+  if(d.type==='border'){ const [x0,x1,z0,z1]=borderBounds(d), W=E.map.size.w, D=E.map.size.d; if(x0===-W/2&&x1===W/2&&z0===-D/2&&z1===D/2){ draw(); return; }
+    snapshot(); applyBounds(x0,x1,z0,z1); toast(`Área del mapa: ${E.map.size.w} × ${E.map.size.d} m`); changed(); return; }
   if(d.type==='create'){ const a=d.a,b=d.b,t=d.tool;
     if(t.kind==='line'){ const q=lineSnap(a,b), L=Math.hypot(q.x-a.x,q.z-a.z);
       if(L>=0.5){ snapshot(); E.map.items.push({t:t.t,x0:a.x,z0:a.z,x1:q.x,z1:q.z}); E.sel={kind:'item',i:E.map.items.length-1}; growToFit(); changed(); } else draw(); }
@@ -1802,6 +1819,13 @@ function paint(){
   if(so&&E.sel.kind==='obj'&&so){ const [x,y]=toS(so.x,so.z); c.strokeStyle='#ffcf3f'; c.lineWidth=2; c.beginPath(); c.arc(x,y,Math.max(13,0.6*s),0,TAU); c.stroke(); }
   if(so&&E.sel.kind==='wp'){ const [x,y]=toS(so.x,so.z), a=so.face*D2R, [hx2,hy2]=toS(so.x+Math.sin(a)*1.6,so.z-Math.cos(a)*1.6); c.strokeStyle='#ffffff'; c.lineWidth=1.5; c.beginPath(); c.moveTo(x,y); c.lineTo(hx2,hy2); c.stroke(); }
   for(const h of handlesOf(E.sel)){ const [x,y]=toS(h.x,h.z); c.fillStyle='#ffffff'; c.strokeStyle='#1b1f27'; c.lineWidth=2; c.beginPath(); c.arc(x,y,6,0,TAU); c.fill(); c.stroke(); }
+  // bordes del mapa: manillas y vista previa al arrastrar
+  if(TOOL_BY[E.tool].kind==='select'){ const W=E.map.size.w, D=E.map.size.d, dg=E.drag&&E.drag.type==='border'?E.drag:null;
+    const [bx0,bx1,bz0,bz1]=dg?borderBounds(dg):[-W/2,W/2,-D/2,D/2], [px0,py0]=toS(bx0,bz0), [px1,py1]=toS(bx1,bz1);
+    if(dg){ c.save(); c.setLineDash([8,6]); c.strokeStyle='#ffcf3f'; c.lineWidth=2; c.strokeRect(px0,py0,px1-px0,py1-py0); c.restore();
+      c.fillStyle='#ffcf3f'; c.font='700 13px Rubik, sans-serif'; c.textAlign='center'; c.fillText(`${bx1-bx0} × ${bz1-bz0} m`,(px0+px1)/2,py0-10); }
+    const mx=(px0+px1)/2, my=(py0+py1)/2; c.fillStyle='#ffffff'; c.strokeStyle='#1b1f27'; c.lineWidth=2;
+    for(const [x,y,w,h] of [[px0-4,my-18,8,36],[px1-4,my-18,8,36],[mx-18,py0-4,36,8],[mx-18,py1-4,36,8]]){ c.beginPath(); c.roundRect?c.roundRect(x,y,w,h,4):c.rect(x,y,w,h); c.fill(); c.stroke(); } }
   // vista previa de creación
   if(E.drag&&E.drag.type==='create'){ const a=E.drag.a,b=E.drag.b,t=E.drag.tool; c.strokeStyle='#ffcf3f'; c.fillStyle='rgba(255,207,63,.18)'; c.lineWidth=2;
     if(t.kind==='line'){ const q=lineSnap(a,b), [x0,y0]=toS(a.x,a.z), [x1,y1]=toS(q.x,q.z); c.lineWidth=Math.max(3,0.2*s); c.beginPath(); c.moveTo(x0,y0); c.lineTo(x1,y1); c.stroke(); }
