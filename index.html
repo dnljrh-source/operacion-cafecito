@@ -432,8 +432,7 @@ const ETAPA2={v:1,name:'Etapa 2 · La U',size:{w:40,d:28},
 /* Etapa 3 · Piso 9 — plano real (escala 0,05 m/px; X=(px-465)*0.05, Z=(py-260)*0.05) */
 const ETAPA3=(()=>{
   const Zt=x=>-10+0.25175*(x+12.75), r2=v=>Math.round(v*100)/100;
-  const stair=[]; for(let a=-12.75;a<23-0.01;a+=2.5){ const b=Math.min(23,a+2.5); stair.push({a,b,z:r2(Zt((a+b)/2))}); }
-  const zAt=x=>{ for(const s of stair) if(x>=s.a-1e-6&&x<s.b-1e-6) return s.z; return stair[stair.length-1].z; };
+  const zAt=x=>r2(Zt(x)); // borde superior: un solo ventanal diagonal
   const items=[
     {t:'piso',mat:'madera',x0:-12.75,z0:-11,x1:3,z1:-3.75},{t:'piso',mat:'baldosa',x0:-15.25,z0:-5.5,x1:-11.5,z1:-1},
     // zonas fuera del verde y núcleo del edificio
@@ -478,32 +477,31 @@ const ETAPA3=(()=>{
     {t:'vidrio',x0:11,z0:zAt(11),x1:11,z1:-0.9},{t:'vidrio',x0:11,z0:-0.9,x1:12.9,z1:-0.9},{t:'vidrio',x0:13.8,z0:-0.9,x1:15.6,z1:-0.9},
     {t:'vidrio',x0:15.6,z0:zAt(15.6),x1:15.6,z1:-0.9},{t:'mesa',x0:12.1,z0:-2.55,x1:14.6,z1:-1.75},{t:'letrero',x:12,z:-0.85,r:180,text:'SALA 10 · HORIZONTE'},
     {t:'vidrio',x0:15.6,z0:-0.9,x1:17,z1:-0.9},{t:'vidrio',x0:17.9,z0:-0.9,x1:19.25,z1:-0.9},{t:'mesa',x0:16.4,z0:-1.85,x1:18.6,z1:-1.4},{t:'letrero',x:18.6,z:-0.85,r:180,text:'SALA 8 · NODO'},
-    {t:'mesa',x0:9.9,z0:-2.3,x1:10.7,z1:-1.8},{t:'planta_alta',x:10.6,z:zAt(10.6)+0.45,r:0},
+    {t:'mesa',x0:9.9,z0:-2.3,x1:10.7,z1:-1.8},{t:'planta_alta',x:10.6,z:zAt(10.9)+0.45,r:0},
     // C: salas 7 y 3, zona 12
     
     {t:'meson',x0:4.2,z0:-0.4,x1:6.2,z1:0.2},{t:'persona',x:5.2,z:0.48,r:0},{t:'letrero',x:5.2,z:0.7,r:0,text:'RECEPCIÓN'},{t:'planta_alta',x:3.35,z:-2.9,r:0},
     
     
-    {t:'planta_alta',x:3.4,z:zAt(3.4)+0.4,r:0},
+    {t:'planta_alta',x:3.4,z:zAt(3.7)+0.45,r:0},
     // B: lounge / comedor
     {t:'mesa',x0:-11.6,z0:-9,x1:-10.6,z1:-6.2},{t:'mesa',x0:-8,z0:-7.1,x1:-5,z1:-6.3},{t:'mesa',x0:-3.5,z0:-6.4,x1:-2.2,z1:-5.6},{t:'mesa',x0:-0.2,z0:-5.9,x1:1,z1:-5.25},
-    {t:'planta',x:-6,z:-3.97,r:0},{t:'planta',x:-1,z:-3.97,r:0},{t:'planta_alta',x:2.6,z:-3.97,r:0},{t:'planta_alta',x:-12.4,z:zAt(-12.4)+0.4,r:0},
+    {t:'planta',x:-6,z:-3.97,r:0},{t:'planta',x:-1,z:-3.97,r:0},{t:'planta_alta',x:2.6,z:-3.97,r:0},{t:'planta_alta',x:-12.3,z:zAt(-12)+0.45,r:0},
     {t:'tele',x:-4,z:-3.8,r:0},{t:'letrero',x:-8,z:-3.8,r:0,text:'LOUNGE'},
     // A: cocina
     {t:'meson',x0:-15.25,z0:-5.4,x1:-14.6,z1:-4.6},{t:'meson',x0:-15.25,z0:-3.2,x1:-14.6,z1:-2.1},{t:'refri',x:-14.85,z:-1.45,r:90},
     {t:'maquina',x:-12.2,z:-1.55,r:0},{t:'dispensador',x:-12,z:-5.1,r:0},{t:'mesa',x0:-14,z0:-3.5,x1:-13,z1:-2.8},{t:'letrero',x:-14,z:-5.45,r:180,text:'COCINA'}
   ];
-  // diagonal superior en escalones: ventanal
-  stair.forEach((s,i)=>{ items.push({t:'ventana',x0:s.a,z0:s.z,x1:s.b,z1:s.z}); const n=stair[i+1]; if(n) items.push({t:'ventana',x0:s.b,z0:s.z,x1:s.b,z1:n.z}); });
+  items.push({t:'ventana',x0:-12.75,z0:-10,x1:23,z1:r2(Zt(23))});
   return {v:1,name:'Etapa 3 · Piso 9',estilo:'loft',size:{w:46,d:22},
     start:{x:-0.7,z:5.9,r:90},
-    obj:{capsule:null,machines:[{x:-15.6,z:5.08,r:180},{x:-14.92,z:-3.9,r:90},{x:5.6,z:r2(zAt(5.6)+0.33),r:180}],desk:{x:-1.12,z:7.75,r:270}},
+    obj:{capsule:null,machines:[{x:-15.6,z:5.08,r:180},{x:-14.92,z:-3.9,r:90},{x:5.6,z:r2(zAt(6.2)+0.47),r:180}],desk:{x:-1.12,z:7.75,r:270}},
     items,
     bosses:[
       {name:'Daniel Jara',look:'gonzalo',speed:1.0,loop:false,path:[{x:20,z:6.2,w:3,face:270,sweep:30},{x:20,z:10.2,w:3,face:270,sweep:30}]},
       {name:'Alexandro Ramirez',look:'alexandro',speed:1.0,loop:false,path:[{x:-20.3,z:8.8,w:4,face:90,sweep:25},{x:-20.3,z:6.6,w:3,face:90,sweep:30}]},
       {name:'Martin Lion',look:'ricardo',speed:1.3,loop:false,path:[{x:-17.6,z:5.95,w:3,face:90,sweep:30},{x:7.8,z:5.95,w:2,face:0,sweep:20},{x:18.4,z:5.95,w:3,face:270,sweep:30}]},
-      {name:'Claudius Hurtado',look:'mauricio',speed:1.2,loop:false,path:[{x:-12.2,z:-3.6,w:3,face:270,sweep:30},{x:-12.2,z:-4.6,w:0,face:90,sweep:0},{x:3.6,z:-4.6,w:2,face:180,sweep:30},{x:7,z:-4,w:0,face:90,sweep:0},{x:9.3,z:-3.6,w:0,face:180,sweep:0},{x:9.3,z:-0.2,w:0,face:90,sweep:0},{x:14.5,z:0.3,w:3,face:0,sweep:30}]}
+      {name:'Claudius Hurtado',look:'mauricio',speed:1.2,loop:false,path:[{x:-12.2,z:-3.6,w:3,face:270,sweep:30},{x:-12.2,z:-4.6,w:0,face:90,sweep:0},{x:3.6,z:-4.6,w:2,face:180,sweep:30},{x:4.3,z:-3.95,w:0,face:90,sweep:0},{x:7,z:-3.7,w:0,face:90,sweep:0},{x:9.3,z:-3.6,w:0,face:180,sweep:0},{x:9.3,z:-0.2,w:0,face:90,sweep:0},{x:14.5,z:0.3,w:3,face:0,sweep:30}]}
     ]};
 })();
 const BUILTIN={original:ORIGINAL,etapa2:ETAPA2,etapa3:ETAPA3};
