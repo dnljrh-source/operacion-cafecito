@@ -1252,7 +1252,7 @@ function createEngine(){
 function fillMapSelect(sel,selected,includeOriginal){
   sel.textContent='';
   const add=(v,t)=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; sel.appendChild(o); };
-  if(includeOriginal) for(const k of Object.keys(BUILTIN)) add(k,BUILTIN[k].name+(sel.id==='eMap'?' (solo lectura)':''));
+  if(includeOriginal) for(const k of Object.keys(BUILTIN)) add(k,BUILTIN[k].name+(sel.id==='eMap'?(cloudEdit()?' (oficial)':' (solo lectura)'):''));
   for(const [id,d] of sortedDocs()) add(id,d.name+(d.status==='afinado'?' · afinado':d.status==='para-afinar'?' · para afinar':''));
   if([...sel.options].some(o=>o.value===selected)) sel.value=selected;
 }
@@ -1274,9 +1274,33 @@ window.addEventListener('hashchange',()=>{ if(location.hash==='#editor'){ if(!do
 const PROD_HOSTS=['operacion-cafecito.pages.dev','dnljrh-source.github.io'];
 const ENV=PROD_HOSTS.includes(location.hostname)?'prod':'dev';
 const SUPA={url:'https://mczzzznhddyevvfydloh.supabase.co',key:'sb_publishable_vDIwcp-c0JRwkVa772J5RQ_k5h0_YVZ',table:ENV==='prod'?'puntajes':'puntajes_dev'};
+if(ENV==='dev') setTimeout(cloudLoad,0);
 if(ENV==='dev'){ document.title='[DEV] '+document.title; const b=document.createElement('div'); b.id='envBadge'; b.textContent='DEV · ambiente de pruebas'; document.body.appendChild(b);
   const g=document.createElement('div'); g.id='ghostBadge'; g.hidden=true; g.textContent='👻 Modo fantasma · G para quitarlo'; document.body.appendChild(g); }
 const rankingOn=!!(SUPA.url&&SUPA.key);
+/* DEV: las etapas oficiales se editan directo y se guardan en la nube (tabla mapas_dev). Prod no lee esta tabla. */
+const BUILTIN_NAME=Object.fromEntries(Object.entries(BUILTIN).map(([k,m])=>[k,m.name]));
+function cloudEdit(){ return typeof ENV!=='undefined'&&ENV==='dev'; }
+let cloudBusy=false, cloudNext=null;
+async function cloudSave(id,map){
+  map.name=BUILTIN_NAME[id]; BUILTIN[id]=map; cloudNext={id,map};
+  const say=t=>{ E.cloudState=t; if(E.id===id&&document.body.classList.contains('editing')) $('eSave').textContent=t; };
+  if(cloudBusy) return; cloudBusy=true;
+  while(cloudNext){ const job=cloudNext; cloudNext=null; say('Guardando en la nube…');
+    try{ await supa('mapas_dev?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({id:job.id,doc:job.map})});
+      try{ localStorage.removeItem('cafecito-dev-pend-'+job.id); }catch(e){} say('Guardado en la nube'); }
+    catch(e){ console.error(e); try{ localStorage.setItem('cafecito-dev-pend-'+job.id,JSON.stringify(job.map)); }catch(err){} say('Sin conexión: quedó en este navegador y se sube al volver'); } }
+  cloudBusy=false; }
+async function cloudLoad(){
+  if(!cloudEdit()) return;
+  let rows=[]; try{ rows=await supa('mapas_dev?select=id,doc,actualizado')||[]; }catch(e){ console.error(e); }
+  for(const r of rows){ if(!isBuiltin(r.id)) continue; try{ const m=sanitizeMap(r.doc); m.name=BUILTIN_NAME[r.id]; BUILTIN[r.id]=m; }catch(e){ console.error(e); } }
+  // cambios que no alcanzaron a subir
+  for(const id of Object.keys(BUILTIN)){ let pend=null; try{ pend=JSON.parse(localStorage.getItem('cafecito-dev-pend-'+id)||'null'); }catch(e){}
+    if(pend){ try{ const m=sanitizeMap(pend); cloudSave(id,m); }catch(e){} } }
+  if(document.body.classList.contains('editing')){ if(isBuiltin(E.id)&&!E.dirty) loadIntoEditor(E.id); }
+  else if(!document.body.classList.contains('playing')) showMenu();
+}
 async function supa(path,opts){
   const o=opts||{}; const r=await fetch(SUPA.url+'/rest/v1/'+path,{method:o.method||'GET',body:o.body,headers:Object.assign({apikey:SUPA.key,'Content-Type':'application/json'},o.headers||{})});
   if(!r.ok){ let m=''; try{ m=(await r.json()).message||''; }catch(e){} const err=new Error('HTTP '+r.status+' '+m); err.status=r.status; throw err; }
@@ -1387,12 +1411,12 @@ function refreshEditorUI(){
   fillMapSelect($('eMap'),E.id,true);
   $('eName').value=E.meta.name; $('eName').disabled=isBuiltin(E.id);
   const st=$('eStatus'); st.className='badge'+(E.meta.status==='afinado'?' afinado':E.meta.status==='para-afinar'?' para':'');
-  st.textContent=isBuiltin(E.id)?'Original':E.meta.status==='afinado'?'Afinado por Claude':E.meta.status==='para-afinar'?'Para afinar':'Borrador';
+  st.textContent=isBuiltin(E.id)?(cloudEdit()?'Oficial · dev':'Original'):E.meta.status==='afinado'?'Afinado por Claude':E.meta.status==='para-afinar'?'Para afinar':'Borrador';
   $('eNotes').value=E.meta.notas||''; $('claudeNote').hidden=!E.meta.notaClaude; $('claudeNoteText').textContent=E.meta.notaClaude||'';
   $('eW').value=E.map.size.w; $('eD').value=E.map.size.d;
   $('ePlay').disabled=!engine; if(!engine) $('ePlay').title='El juego 3D no está disponible en este navegador';
   $('eUndo').disabled=!E.undo.length; $('eRedo').disabled=!E.redo.length;
-  if(isBuiltin(E.id)) $('eSave').textContent='Al editar se crea tu copia';
+  if(isBuiltin(E.id)) $('eSave').textContent=cloudEdit()?(E.cloudState||'Etapa oficial de dev · se guarda en la nube'):'Al editar se crea tu copia';
   updateBanner(); buildPanel();
 }
 function updateBanner(){
@@ -1416,7 +1440,8 @@ function renderWarns(){
 
 /* cambios, deshacer y guardado */
 function snapshot(){
-  if(isBuiltin(E.id)){ // primera edición: crear copia
+  if(isBuiltin(E.id)&&cloudEdit()&&!E.cloudToast){ E.cloudToast=true; toast('Estás editando la etapa oficial de dev: los cambios se guardan en la nube.',3.2); }
+  if(isBuiltin(E.id)&&!cloudEdit()){ // primera edición: crear copia
     const base=BUILTIN[E.id].name.split(' · ')[0].toLowerCase(); E.id=newId(); E.meta={name:'Mi versión de la '+base,status:'borrador',notas:'',notaClaude:'',by:'daniel',parent:''}; E.map.name=E.meta.name;
     toast('Creé una copia tuya para editar. El original queda intacto.',3.2);
     setTimeout(()=>{ E.dirty=true; flushSave(); refreshEditorUI(); },0);
@@ -1459,7 +1484,9 @@ function borderBounds(d){ const W=E.map.size.w, D=E.map.size.d; let x0=-W/2,x1=W
 function changed(panel){ recompute(); scheduleSave(); if(panel!==false) buildPanel(); $('eUndo').disabled=!E.undo.length; $('eRedo').disabled=!E.redo.length; draw(); }
 function scheduleSave(){ E.dirty=true; if(E.meta.status==='afinado'&&E.meta.by==='claude'){ E.meta.by='daniel'; } $('eSave').textContent='Cambios sin guardar…'; clearTimeout(E.saveT); E.saveT=setTimeout(flushSave,900); }
 function flushSave(){
-  clearTimeout(E.saveT); if(!E.dirty||isBuiltin(E.id)) return; E.dirty=false;
+  clearTimeout(E.saveT); if(!E.dirty) return;
+  if(isBuiltin(E.id)){ if(!cloudEdit()) return; E.dirty=false; cloudSave(E.id,clone(E.map)); return; }
+  E.dirty=false;
   E.map.name=E.meta.name;
   const doc={name:E.meta.name,status:E.meta.status==='original'?'borrador':E.meta.status,notas:E.meta.notas||'',notaClaude:E.meta.notaClaude||'',by:E.meta.by||'daniel',parent:E.meta.parent||'',updated:new Date().toISOString(),map:clone(E.map)};
   persist(E.id,doc,s=>{ $('eSave').textContent=s; });
