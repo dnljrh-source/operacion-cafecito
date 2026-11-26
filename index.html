@@ -719,6 +719,7 @@ async function connectDb(){
 }
 (function tryDb(n){ connectDb().then(ok=>{ if(!ok&&n<3) setTimeout(()=>tryDb(n+1),1200*(n+1)); }); })(0);
 const newId=()=>'m'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);
+const hoyCLg=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago'}).format(new Date());
 var DAILY=null; // daily de hoy: {fecha, dd, name}
 const DAILY_PFX='Daily · ';
 function dailyMapFrom(dd){ if(!dd||!dd.config||!BUILTIN[dd.base]) return null; const m=clone(BUILTIN[dd.base]), c=dd.config;
@@ -1466,7 +1467,7 @@ function refreshMenu(){ fillMapSelect($('mapPick'),menuPick,true); menuPick=$('m
 function showMenu(){
   document.body.classList.remove('editing'); if(engine){ engine.suspend(false); engine.toMenu(); }
   refreshMenu(); const m=mapById(menuPick)||mapById('original'); if(engine) engine.load(m.map,menuPick,m.name);
-  showScreen('menu');
+  showScreen('menu'); if(rankingOn&&typeof loadDaily==='function'&&(!DAILY||DAILY.fecha!==hoyCLg())){ delete dailyCache.hoy; loadDaily(); }
 }
 $('mapPick').addEventListener('change',()=>{ menuPick=$('mapPick').value; const m=mapById(menuPick); if(m&&engine) engine.load(m.map,menuPick,m.name); });
 $('startBtn').addEventListener('click',()=>{ if(!engine) return; if(rankingOn&&!myName){ askName(()=>$('startBtn').click()); return; } const m=mapById(menuPick)||mapById('original'); engine.start(m.map,menuPick,{name:m.name,onExit:w=>{ if(w==='editor') openEditor(menuPick); else showMenu(); }}); });
@@ -1778,7 +1779,7 @@ function enterDaily(f){ flushSave(); const base=BUILTIN.etapa3, cfg=DCAL.list.ge
   toast(cfg?'Daily del '+f+': mueve el inicio, elige la cafetera y ajusta las rutas. Se guarda solo.':'Día nuevo: parte igual que la Etapa 3. Lo que cambies se guarda para el '+f+'.',4); }
 function saveDailyNow(){ const d=E.daily; if(!d) return; const st=E.map.start, cfg={start:{x:st.x,z:st.z,r:st.r||0},cafetera:d.cafetera,bosses:clone(E.map.bosses)};
   const say=t=>{ E.dailyState=t; if(E.daily===d) $('eSave').textContent=t; }; say('Guardando el daily…');
-  dailyRpc('guardar_daily',{p_fecha:d.fecha,p_config:cfg}).then(()=>{ DCAL.list.set(d.fecha,cfg); d.nuevo=false; delete dailyCache[d.fecha]; if(DAILY&&DAILY.fecha===d.fecha){ DAILY=null; loadDaily(); } say('Daily guardado'); })
+  dailyRpc('guardar_daily',{p_fecha:d.fecha,p_config:cfg}).then(()=>{ DCAL.list.set(d.fecha,cfg); d.nuevo=false; delete dailyCache[d.fecha]; delete dailyCache.hoy; if(!DAILY||DAILY.fecha===d.fecha||d.fecha===hoyCL()){ DAILY=null; loadDaily(); } say('Daily guardado'); })
     .catch(e=>{ say(/Clave/i.test(e.server||'')?'Clave incorrecta: abre «Daily» y escríbela de nuevo':'No se pudo guardar el daily: '+netMsg(e)); }); }
 $('eDailyCaf').addEventListener('change',()=>{ if(!E.daily) return; E.daily.cafetera=Number($('eDailyCaf').value)||0; E.dirty=true; flushSave(); draw(); });
 $('eDailyOut').addEventListener('click',()=>{ flushSave(); E.daily=null; loadIntoEditor('etapa3'); });
