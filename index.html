@@ -460,8 +460,8 @@ function sanitizeMap(m){
     const T=TYPES[it.t];
     if(T.kind==='point'){ const o={t:it.t,x:X(it.x),z:Z(it.z),r:normR(it.r)}; if(it.t==='letrero') o.text=String(it.text||'LETRERO').slice(0,22); if(it.t==='puerta'&&it.text) o.text=String(it.text).slice(0,12); out.items.push(o); continue; }
     const o={t:it.t,x0:X(it.x0),z0:Z(it.z0),x1:X(it.x1),z1:Z(it.z1)};
-    if(T.kind==='line'){ const q=lineSnap({x:o.x0,z:o.z0},{x:o.x1,z:o.z1},2); o.x1=q.x; o.z1=q.z; if(Math.hypot(o.x1-o.x0,o.z1-o.z0)<0.2) continue; }
-    else { if(Math.abs(o.x1-o.x0)<0.2||Math.abs(o.z1-o.z0)<0.2) continue; }
+    if(T.kind==='line'){ const q=lineSnap({x:o.x0,z:o.z0},{x:o.x1,z:o.z1},2); o.x1=q.x; o.z1=q.z; if(Math.hypot(o.x1-o.x0,o.z1-o.z0)<0.05){ o.x1=r2(o.x0+(o.x1>=o.x0?0.05:-0.05)); o.z1=o.z0; } }
+    else { if(Math.abs(o.x1-o.x0)<0.05) o.x1=r2(Math.min(o.x0,o.x1)+0.05); if(Math.abs(o.z1-o.z0)<0.05) o.z1=r2(Math.min(o.z0,o.z1)+0.05); }
     if(it.t==='piso') o.mat=['baldosa','madera','cemento','alfombra'].includes(it.mat)?it.mat:'baldosa';
     if(it.t==='cubiculos') o.gente=r2(num(it.gente,0.25,0,1));
     out.items.push(o);
@@ -1623,10 +1623,10 @@ function endDrag(e){
     snapshot(); applyBounds(x0,x1,z0,z1); toast(`Área del mapa: ${E.map.size.w} × ${E.map.size.d} m`); changed(); return; }
   if(d.type==='create'){ const a=d.a,b=d.b,t=d.tool;
     if(t.kind==='line'){ const q=lineSnap(a,b), L=Math.hypot(q.x-a.x,q.z-a.z);
-      if(L>=0.5){ snapshot(); E.map.items.push({t:t.t,x0:a.x,z0:a.z,x1:q.x,z1:q.z}); E.sel={kind:'item',i:E.map.items.length-1}; growToFit(); changed(); } else draw(); }
-    else { if(Math.abs(b.x-a.x)>=0.5&&Math.abs(b.z-a.z)>=0.5){ snapshot(); const it={t:t.t,x0:Math.min(a.x,b.x),z0:Math.min(a.z,b.z),x1:Math.max(a.x,b.x),z1:Math.max(a.z,b.z)};
+      if(L>=0.1){ snapshot(); E.map.items.push({t:t.t,x0:a.x,z0:a.z,x1:q.x,z1:q.z}); E.sel={kind:'item',i:E.map.items.length-1}; growToFit(); changed(); } else draw(); }
+    else { if(Math.abs(b.x-a.x)>=0.1&&Math.abs(b.z-a.z)>=0.1){ snapshot(); const it={t:t.t,x0:Math.min(a.x,b.x),z0:Math.min(a.z,b.z),x1:Math.max(a.x,b.x),z1:Math.max(a.z,b.z)};
         if(t.mat) it.mat=t.mat; if(t.t==='cubiculos') it.gente=0.25; E.map.items.push(it); E.sel={kind:'item',i:E.map.items.length-1}; growToFit(); changed(); } else draw(); } }
-  else if(d.type==='handle'){ const o=selRef(E.sel); if(o&&'x0' in o&&TYPES[o.t].kind==='rect'){ const r=rectOf(o); Object.assign(o,{x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1}); if(r.w<0.5||r.d<0.5){ deleteSel(); toast('Quedó demasiado chico y lo borré. Deshacer lo recupera.'); } } growToFit(); changed(); }
+  else if(d.type==='handle'){ const o=selRef(E.sel); if(o&&'x0' in o&&TYPES[o.t].kind==='rect'){ const r=rectOf(o); Object.assign(o,{x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1}); if(r.w<0.05) o.x1=r2(o.x0+0.05); if(r.d<0.05) o.z1=r2(o.z0+0.05); } growToFit(); changed(); }
   else if(d.type==='move'&&d.snapped) growToFit(); changed();
 }
 ecan.addEventListener('pointerup',endDrag); ecan.addEventListener('pointercancel',endDrag);
@@ -1668,10 +1668,10 @@ function numRow(defs){ const row=el('div',{class:'nums'});
 function posFields(o){ return numRow([['X (m)',()=>o.x,v=>{ o.x=v; }],['Z (m)',()=>o.z,v=>{ o.z=v; }]]); }
 function rectFields(o){ const R=()=>rectOf(o);
   return numRow([['Centro X',()=>R().cx,v=>{ const r=R(); o.x0=r2(v-r.w/2); o.x1=r2(v+r.w/2); }],['Centro Z',()=>R().cz,v=>{ const r=R(); o.z0=r2(v-r.d/2); o.z1=r2(v+r.d/2); }],
-    ['Ancho (X)',()=>R().w,v=>{ const r=R(), w=Math.max(0.2,v); o.x0=r2(r.cx-w/2); o.x1=r2(r.cx+w/2); }],['Largo (Z)',()=>R().d,v=>{ const r=R(), d=Math.max(0.2,v); o.z0=r2(r.cz-d/2); o.z1=r2(r.cz+d/2); }]]); }
+    ['Ancho (X)',()=>R().w,v=>{ const r=R(), w=Math.max(0.05,v); o.x0=r2(r.cx-w/2); o.x1=r2(r.cx+w/2); }],['Largo (Z)',()=>R().d,v=>{ const r=R(), d=Math.max(0.05,v); o.z0=r2(r.cz-d/2); o.z1=r2(r.cz+d/2); }]]); }
 function lineFields(o){ const len=()=>Math.hypot(o.x1-o.x0,o.z1-o.z0);
   return numRow([['Inicio X',()=>o.x0,v=>{ o.x0=v; }],['Inicio Z',()=>o.z0,v=>{ o.z0=v; }],['Fin X',()=>o.x1,v=>{ o.x1=v; }],['Fin Z',()=>o.z1,v=>{ o.z1=v; }],
-    ['Largo (m)',len,v=>{ const L=len()||1, k=Math.max(0.2,v)/L; o.x1=r2(o.x0+(o.x1-o.x0)*k); o.z1=r2(o.z0+(o.z1-o.z0)*k); }]]); }
+    ['Largo (m)',len,v=>{ const L=len()||1, k=Math.max(0.05,v)/L; o.x1=r2(o.x0+(o.x1-o.x0)*k); o.z1=r2(o.z0+(o.z1-o.z0)*k); }]]); }
 function buildPanel(){
   const sec=$('secSel'); sec.textContent=''; const s=E.sel, o=selRef(s);
   if(!o){ sec.append(el('h4',{text:'Selección'}),el('p',{text:'Nada seleccionado. Elige una herramienta a la izquierda o haz clic en algo del plano.'})); }
