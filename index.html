@@ -1160,7 +1160,7 @@ async function supa(path,opts){
   const txt=await r.text(); return txt?JSON.parse(txt):null;
 }
 async function bestList(mapa){
-  const rows=await supa(SUPA.table+'?select=nombre,tiempo,visto,estrellas,creado&mapa=eq.'+encodeURIComponent(mapa)+'&order=tiempo.asc,visto.asc,creado.asc&limit=1000');
+  const rows=await supa(SUPA.table+'?select=nombre,tiempo,visto,estrellas,creado&mapa=eq.'+encodeURIComponent(mapa)+'&order=tiempo.asc,estrellas.desc,visto.asc,creado.asc&limit=1000');
   const seen=new Set(), out=[]; for(const r of (Array.isArray(rows)?rows:[])){ const k=String(r.nombre||'').trim().toLowerCase(); if(!k||seen.has(k)) continue; seen.add(k); out.push(r); } return out;
 }
 const netMsg=e=>e&&e.status>=400&&e.status<500?'El ranking rechazó el puntaje.':'No se pudo conectar con el ranking. Revisa tu conexión e intenta de nuevo.';
