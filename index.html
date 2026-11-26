@@ -928,14 +928,22 @@ function createEngine(){
   const canvas=renderer.domElement;
   let dragMode=false, dragging=false, lockTimer=0, suspended=false;
   function setDrag(v){ dragMode=v; document.body.classList.toggle('drag',v&&game.state==='play'); }
+  function plainLock(){ try{ const q=canvas.requestPointerLock(); if(q&&typeof q.catch==='function') q.catch(()=>setDrag(true)); }catch(e){ setDrag(true); } }
   function requestLock(){ if(!canvas.requestPointerLock){ setDrag(true); return; }
-    try{ const p=canvas.requestPointerLock(); if(p&&typeof p.catch==='function') p.catch(()=>setDrag(true)); }catch(e){ setDrag(true); }
+    // movimiento "crudo" del mouse (sin aceleración del sistema): evita los saltos de cámara en Chrome/Windows
+    let p=null; try{ p=canvas.requestPointerLock({unadjustedMovement:true}); }catch(e){ p=null; }
+    if(p&&typeof p.catch==='function') p.catch(()=>plainLock()); else if(p===null) plainLock();
     clearTimeout(lockTimer); lockTimer=setTimeout(()=>{ if(document.pointerLockElement!==canvas&&game.state==='play') setDrag(true); },800); }
   function releaseLock(){ try{ if(document.pointerLockElement===canvas) document.exitPointerLock(); }catch(e){} }
-  document.addEventListener('pointerlockchange',()=>{ if(document.pointerLockElement===canvas) setDrag(false); else if(game.state==='play'&&!dragMode) pause(); });
+  let lookDX=0, lookDY=0, skipMoves=0;
+  document.addEventListener('pointerlockchange',()=>{ lookDX=lookDY=0; if(document.pointerLockElement===canvas){ setDrag(false); skipMoves=2; } else if(game.state==='play'&&!dragMode) pause(); });
   document.addEventListener('pointerlockerror',()=>setDrag(true));
   document.addEventListener('mousemove',e=>{ if(game.state!=='play') return;
-    if(document.pointerLockElement===canvas||(dragMode&&dragging)){ P.yaw-=(e.movementX||0)*SENS; P.pitch=clamp(P.pitch-(e.movementY||0)*SENS,-1.35,1.35); } });
+    if(document.pointerLockElement===canvas||(dragMode&&dragging)){
+      const dx=e.movementX||0, dy=e.movementY||0;
+      if(skipMoves>0){ skipMoves--; return; }            // el primer evento tras capturar el mouse suele traer un salto
+      if(Math.abs(dx)>250||Math.abs(dy)>250) return;      // descarta picos falsos del navegador
+      lookDX+=dx; lookDY+=dy; } });
   canvas.addEventListener('mousedown',e=>{ if(game.state!=='play') return; if(dragMode){ dragging=true; e.preventDefault(); } else if(document.pointerLockElement!==canvas) requestLock(); });
   window.addEventListener('mouseup',()=>{ dragging=false; });
   canvas.addEventListener('contextmenu',e=>e.preventDefault());
@@ -997,6 +1005,7 @@ function createEngine(){
       if(d2>1e-10){ const d=Math.sqrt(d2); P.x=cx+ex/d*r; P.z=cz+ez/d*r; }
       else { const l=P.x-s.x0, rr=s.x1-P.x, t=P.z-s.z0, b=s.z1-P.z, m=Math.min(l,rr,t,b); if(m===l)P.x=s.x0-r; else if(m===rr)P.x=s.x1+r; else if(m===t)P.z=s.z0-r; else P.z=s.z1+r; } } }
   function updatePlayer(dt){
+    if(lookDX||lookDY){ P.yaw-=clamp(lookDX,-600,600)*SENS; P.pitch=clamp(P.pitch-clamp(lookDY,-600,600)*SENS,-1.35,1.35); lookDX=lookDY=0; }
     if(keys.ArrowLeft) P.yaw+=2.2*dt; if(keys.ArrowRight) P.yaw-=2.2*dt;
     let f=0,s=0; if(keys.KeyW||keys.ArrowUp) f+=1; if(keys.KeyS||keys.ArrowDown) f-=1; if(keys.KeyD) s+=1; if(keys.KeyA) s-=1;
     const shift=keys.ShiftLeft||keys.ShiftRight, len=Math.hypot(f,s);
