@@ -102,6 +102,7 @@ label.f{display:grid;gap:4px;font-size:14px;color:var(--muted)}
 .rtable .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .rtable tr.me td{color:var(--accent);font-weight:600}
 .rscroll{overflow-x:auto;margin:0 0 14px}
+#envBadge{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:60;background:#7c3aed;color:#fff;font:600 12px Rubik,sans-serif;padding:4px 12px;border-radius:999px;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.35)}
 #wMsg,#rMsg{font-size:14px;color:var(--muted)}
 [hidden]{display:none!important}
 
@@ -1133,7 +1134,11 @@ $('editBtn').addEventListener('click',()=>{ try{ history.replaceState(null,'','#
 window.addEventListener('hashchange',()=>{ if(location.hash==='#editor'){ if(!document.body.classList.contains('editing')) openEditor(menuPick); } else if(document.body.classList.contains('editing')) closeEditor(); });
 
 /* ================= ranking en línea (Supabase) ================= */
-const SUPA={url:'https://mczzzznhddyevvfydloh.supabase.co',key:'sb_publishable_vDIwcp-c0JRwkVa772J5RQ_k5h0_YVZ'};
+/* Ambientes: producción solo en las direcciones públicas; todo lo demás (dev.*, vistas previas) es pruebas */
+const PROD_HOSTS=['operacion-cafecito.pages.dev','dnljrh-source.github.io'];
+const ENV=PROD_HOSTS.includes(location.hostname)?'prod':'dev';
+const SUPA={url:'https://mczzzznhddyevvfydloh.supabase.co',key:'sb_publishable_vDIwcp-c0JRwkVa772J5RQ_k5h0_YVZ',table:ENV==='prod'?'puntajes':'puntajes_dev'};
+if(ENV==='dev'){ document.title='[DEV] '+document.title; const b=document.createElement('div'); b.id='envBadge'; b.textContent='DEV · ambiente de pruebas'; document.body.appendChild(b); }
 const rankingOn=!!(SUPA.url&&SUPA.key);
 async function supa(path,opts){
   const o=opts||{}; const r=await fetch(SUPA.url+'/rest/v1/'+path,{method:o.method||'GET',body:o.body,headers:Object.assign({apikey:SUPA.key,'Content-Type':'application/json'},o.headers||{})});
@@ -1141,7 +1146,7 @@ async function supa(path,opts){
   const txt=await r.text(); return txt?JSON.parse(txt):null;
 }
 async function bestList(mapa){
-  const rows=await supa('puntajes?select=nombre,tiempo,visto,estrellas,creado&mapa=eq.'+encodeURIComponent(mapa)+'&order=tiempo.asc,visto.asc,creado.asc&limit=1000');
+  const rows=await supa(SUPA.table+'?select=nombre,tiempo,visto,estrellas,creado&mapa=eq.'+encodeURIComponent(mapa)+'&order=tiempo.asc,visto.asc,creado.asc&limit=1000');
   const seen=new Set(), out=[]; for(const r of (Array.isArray(rows)?rows:[])){ const k=String(r.nombre||'').trim().toLowerCase(); if(!k||seen.has(k)) continue; seen.add(k); out.push(r); } return out;
 }
 const netMsg=e=>e&&e.status>=400&&e.status<500?'El ranking rechazó el puntaje.':'No se pudo conectar con el ranking. Revisa tu conexión e intenta de nuevo.';
@@ -1169,7 +1174,7 @@ $('wSave').addEventListener('click',async()=>{
   const n=$('wName').value.trim().slice(0,20); if(!n){ $('wMsg').textContent='Primero escribe tu nombre.'; $('wName').focus(); return; }
   saving=true; $('wSave').disabled=true; $('wMsg').textContent='Guardando…';
   try{
-    await supa('puntajes',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({nombre:n,mapa:lastRun.m,tiempo:lastRun.t,visto:lastRun.s,estrellas:lastRun.st})});
+    await supa(SUPA.table,{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({nombre:n,mapa:lastRun.m,tiempo:lastRun.t,visto:lastRun.s,estrellas:lastRun.st})});
     lastRun.saved=true;
     const list=await bestList(lastRun.m); const pos=list.findIndex(r=>String(r.nombre).trim().toLowerCase()===n.toLowerCase())+1;
     const mine=list[pos-1]; const improved=mine&&Math.abs(Number(mine.tiempo)-lastRun.t)<0.011;

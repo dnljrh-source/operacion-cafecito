@@ -10,3 +10,12 @@ Juego 3D de sigilo en una oficina: consigue tu café y vuelve a tu escritorio si
 - Editor de mapas incluido.
 
 Controles: WASD para moverte, mouse para mirar, Shift para correr, C para agacharte y E para interactuar.
+
+## Ambientes
+
+| Ambiente | Rama | Dirección | Ranking |
+|---|---|---|---|
+| Producción (público) | `main` | https://operacion-cafecito.pages.dev | tabla `puntajes` |
+| Pruebas | `dev` | https://dev.operacion-cafecito.pages.dev | tabla `puntajes_dev` |
+
+Los cambios se suben primero a `dev`. Cuando están probados, se juntan con `main` y quedan públicos.
