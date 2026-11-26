@@ -1390,7 +1390,7 @@ function showRoute(w,map,ruta,title){
   if(!map||!Array.isArray(ruta)||ruta.length<2){ box.hidden=true; return; }
   box.hidden=false; cap.innerHTML='';
   const t=document.createElement('b'); t.textContent=title; cap.appendChild(t); cap.insertAdjacentHTML('beforeend',routeLegend(!!map.obj.capsule));
-  requestAnimationFrame(()=>drawRoute($(w+'Route'),map,ruta));
+  requestAnimationFrame(()=>{ drawRoute($(w+'Route'),map,ruta); if(w==='r'||title!=='Tu recorrido') try{ box.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(e){} });
 }
 async function showRemoteRoute(r,mapName,w){
   const map=(w==='w'&&lastMap&&lastMap.name===mapName)?lastMap:routeMapByName(mapName);
