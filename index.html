@@ -1668,7 +1668,7 @@ function closeEditor(){ flushSave(); showMenu(); }
 $('eBack').addEventListener('click',()=>{ try{ history.replaceState(null,'','#'); }catch(e){} closeEditor(); });
 function loadIntoEditor(id){
   const m=mapById(id)||mapById('original'); id=mapById(id)?id:'original';
-  E.id=id; E.map=clone(m.map); E.undo=[]; E.redo=[]; E.sel=null; E.boss=0; E.fitted=false;
+  E.id=id; E.map=clone(m.map); E.undo=[]; E.redo=[]; E.sel=null; E.multi=null; E.boss=0; E.fitted=false;
   E.meta=m.doc?{name:m.doc.name,status:m.doc.status,notas:m.doc.notas,notaClaude:m.doc.notaClaude,by:m.doc.by,parent:m.doc.parent}:{name:m.name,status:'original',notas:'',notaClaude:'',by:'daniel',parent:''};
   recompute(); refreshEditorUI(); if(document.body.classList.contains('editing')){ resizeCanvas(); fit(); E.fitted=cw>=10; draw(); }
 }
@@ -1756,8 +1756,8 @@ function flushSave(){
   const doc={name:E.meta.name,status:E.meta.status==='original'?'borrador':E.meta.status,notas:E.meta.notas||'',notaClaude:E.meta.notaClaude||'',by:E.meta.by||'daniel',parent:E.meta.parent||'',updated:new Date().toISOString(),map:clone(E.map)};
   persist(E.id,doc,s=>{ $('eSave').textContent=s; });
 }
-function undo(){ if(!E.undo.length) return; E.redo.push(JSON.stringify(E.map)); E.map=JSON.parse(E.undo.pop()); E.sel=null; clampBoss(); changed(); refreshEditorUI(); }
-function redo(){ if(!E.redo.length) return; E.undo.push(JSON.stringify(E.map)); E.map=JSON.parse(E.redo.pop()); E.sel=null; clampBoss(); changed(); refreshEditorUI(); }
+function undo(){ if(!E.undo.length) return; E.redo.push(JSON.stringify(E.map)); E.map=JSON.parse(E.undo.pop()); E.sel=null; E.multi=null; clampBoss(); changed(); refreshEditorUI(); }
+function redo(){ if(!E.redo.length) return; E.undo.push(JSON.stringify(E.map)); E.map=JSON.parse(E.redo.pop()); E.sel=null; E.multi=null; clampBoss(); changed(); refreshEditorUI(); }
 function clampBoss(){ E.boss=clamp(E.boss,0,Math.max(0,E.map.bosses.length-1)); }
 $('eUndo').addEventListener('click',undo); $('eRedo').addEventListener('click',redo);
 $('eName').addEventListener('input',()=>{ if(isBuiltin(E.id)) return; E.meta.name=$('eName').value.slice(0,40)||'Sin nombre'; scheduleSave(); });
@@ -1822,14 +1822,26 @@ function handlesOf(sel){
 }
 function hitHandle(p){ for(const h of handlesOf(E.sel)) if(Math.hypot(h.x-p.x,h.z-p.z)<Math.max(0.3,8/E.view.s)) return h; return null; }
 function selRef(sel){ if(!sel) return null; if(sel.kind==='item') return E.map.items[sel.i]; if(sel.kind==='obj') return sel.key==='start'?E.map.start:sel.key==='machine'?E.map.obj.machines[sel.i]:E.map.obj[sel.key]; if(sel.kind==='wp'){ const b=E.map.bosses[sel.b]; return b&&b.path[sel.i]; } return null; }
-function moveSel(dx,dz){ const s=E.sel, o=selRef(s); if(!o) return; if(s.kind==='item'&&'x0' in o){ o.x0=r2(o.x0+dx); o.x1=r2(o.x1+dx); o.z0=r2(o.z0+dz); o.z1=r2(o.z1+dz); } else { o.x=r2(o.x+dx); o.z=r2(o.z+dz); } }
+const sameSel=(a,b)=>a&&b&&a.kind===b.kind&&a.i===b.i&&a.key===b.key&&a.b===b.b;
+const selList=()=>E.multi||(E.sel?[E.sel]:[]);
+const inMulti=h=>selList().some(q=>sameSel(q,h));
+function toggleMulti(h){ const L=selList().slice(), k=L.findIndex(q=>sameSel(q,h)); if(k>=0) L.splice(k,1); else L.push(h); E.multi=L.length>1?L:null; E.sel=L[L.length-1]||null; }
+function boxSelect(a,b){ const x0=Math.min(a.x,b.x),x1=Math.max(a.x,b.x),z0=Math.min(a.z,b.z),z1=Math.max(a.z,b.z), inP=(x,z)=>x>=x0&&x<=x1&&z>=z0&&z<=z1, out=[];
+  E.map.items.forEach((it,i)=>{ if(it.t==='piso') return; const q=itemBounds(it); if(q.x0>=x0&&q.x1<=x1&&q.z0>=z0&&q.z1<=z1) out.push({kind:'item',i}); });
+  const ob=E.map.obj; if(ob.capsule&&inP(ob.capsule.x,ob.capsule.z)) out.push({kind:'obj',key:'capsule'}); ob.machines.forEach((q,i)=>{ if(inP(q.x,q.z)) out.push({kind:'obj',key:'machine',i}); });
+  if(inP(E.map.start.x,E.map.start.z)) out.push({kind:'obj',key:'start'});
+  E.map.bosses.forEach((bb,bi)=>bb.path.forEach((w,i)=>{ if(inP(w.x,w.z)) out.push({kind:'wp',b:bi,i}); }));
+  return out; }
+function deleteMulti(){ const L=selList().slice().sort((a,b)=>(b.i||0)-(a.i||0)); let any=false; for(const q of L) if(deleteSel(q)) any=true; E.sel=null; E.multi=null; return any; }
+function moveSel(dx,dz){ if(E.multi){ for(const q of E.multi) moveOne(q,dx,dz); return; } moveOne(E.sel,dx,dz); }
+function moveOne(s,dx,dz){ const o=selRef(s); if(!o) return; if(s.kind==='item'&&'x0' in o){ o.x0=r2(o.x0+dx); o.x1=r2(o.x1+dx); o.z0=r2(o.z0+dz); o.z1=r2(o.z1+dz); } else { o.x=r2(o.x+dx); o.z=r2(o.z+dz); } }
 function deleteSel(sel){ sel=sel||E.sel; if(!sel) return false;
   if(sel.kind==='item'){ E.map.items.splice(sel.i,1); }
   else if(sel.kind==='wp'){ const b=E.map.bosses[sel.b]; if(b) b.path.splice(sel.i,1); }
   else if(sel.kind==='obj'&&sel.key==='machine'){ if(E.map.obj.machines.length<2){ toast('Tiene que quedar al menos una cafetera.'); return false; } E.map.obj.machines.splice(sel.i,1); }
   else if(sel.kind==='obj'&&sel.key==='capsule'){ E.map.obj.capsule=null; toast('Sin cápsula: se parte directo a buscar la cafetera.'); }
   else { toast('El inicio y tu escritorio no se borran: muévelos.'); return false; }
-  E.sel=null; return true; }
+  E.sel=null; E.multi=null; return true; }
 function rotateSel(dir){ const o=selRef(E.sel); if(!o||E.sel.kind==='wp') return; if(E.sel.kind==='item'&&TYPES[o.t].kind!=='point'){ toast('Ese elemento no se gira: redibújalo.'); return; }
   snapshot(); o.r=((o.r||0)+(dir<0?270:90))%360; E.lastR=o.r; changed(); }
 
@@ -1843,9 +1855,12 @@ ecan.addEventListener('pointerdown',e=>{
   if(e.button!==0) return;
   const tool=TOOL_BY[E.tool];
   if(tool.kind==='select'){
-    const h=hitHandle(p); if(h){ E.drag={type:'handle',h:h.h,snapped:false}; return; }
+    const h=!E.multi&&hitHandle(p); if(h){ E.drag={type:'handle',h:h.h,snapped:false}; return; }
     const bs=borderHit(p); if(bs){ const W=E.map.size.w, D=E.map.size.d; E.drag={type:'border',side:bs,v:bs==='l'?-W/2:bs==='r'?W/2:bs==='t'?-D/2:D/2}; draw(); return; }
-    E.sel=hitTest(p); buildPanel(); if(E.sel) E.drag={type:'move',last:snap(p,e.shiftKey),snapped:false}; draw(); return;
+    const hit=hitTest(p);
+    if(e.shiftKey||e.ctrlKey||e.metaKey){ if(hit) toggleMulti(hit); buildPanel(); draw(); return; } // Shift/Ctrl + clic: agrega o quita de la selección
+    if(hit&&E.multi&&inMulti(hit)){ E.drag={type:'move',last:snap(p,false),snapped:false}; draw(); return; } // arrastrar uno del grupo mueve todo
+    E.multi=null; E.sel=hit; buildPanel(); E.drag=hit?{type:'move',last:snap(p,e.shiftKey),snapped:false}:{type:'box',a:p,b:p}; draw(); return;
   }
   if(tool.kind==='erase'){ const hit=hitTest(p); if(hit){ snapshot(); if(deleteSel(hit)) changed(); else E.undo.pop(); } return; }
   if(tool.kind==='line'||tool.kind==='rect'){ const a=snap(p,e.shiftKey); E.drag={type:'create',tool,a,b:a}; draw(); return; }
@@ -1871,6 +1886,7 @@ ecan.addEventListener('pointermove',e=>{
   if(d.type==='border'){ const [lo,hi]=borderLimits(d.side); d.v=clamp(Math.round(d.side==='l'||d.side==='r'?p.x:p.z),lo,hi); draw(); return; }
   if(d.type==='pan'){ E.view.ox=d.ox+(e.clientX-d.sx); E.view.oy=d.oy+(e.clientY-d.sy); draw(); return; }
   if(d.type==='create'){ d.b=snap(p,e.shiftKey); draw(); updateHint(p); return; }
+  if(d.type==='box'){ d.b=p; draw(); return; }
   if(d.type==='move'){ const q=snap(p,e.shiftKey), dx=q.x-d.last.x, dz=q.z-d.last.z; if(dx||dz){ if(!d.snapped){ snapshot(); d.snapped=true; } moveSel(dx,dz); d.last=q; recompute(); scheduleSave(); draw(); } return; }
   if(d.type==='handle'){ const o=selRef(E.sel); if(!o) return; if(!d.snapped){ snapshot(); d.snapped=true; }
     if(d.h==='face'){ let a=Math.atan2(p.x-o.x,-(p.z-o.z))/D2R; a=e.shiftKey?Math.round(a):Math.round(a/15)*15; o.face=((a%360)+360)%360; }
@@ -1881,6 +1897,7 @@ ecan.addEventListener('pointermove',e=>{
 });
 function endDrag(e){
   const d=E.drag; E.drag=null; if(!d) return;
+  if(d.type==='box'){ if(Math.hypot(d.b.x-d.a.x,d.b.z-d.a.z)>0.2){ const L=boxSelect(d.a,d.b); E.multi=L.length>1?L:null; E.sel=L[0]||null; buildPanel(); } draw(); return; }
   if(d.type==='border'){ const [x0,x1,z0,z1]=borderBounds(d), W=E.map.size.w, D=E.map.size.d; if(x0===-W/2&&x1===W/2&&z0===-D/2&&z1===D/2){ draw(); return; }
     snapshot(); applyBounds(x0,x1,z0,z1); toast(`Área del mapa: ${E.map.size.w} × ${E.map.size.d} m`); changed(); return; }
   if(d.type==='create'){ const a=d.a,b=d.b,t=d.tool;
@@ -1899,9 +1916,9 @@ window.addEventListener('keydown',e=>{
   const mod=e.ctrlKey||e.metaKey;
   if(mod&&e.code==='KeyZ'){ e.preventDefault(); if(e.shiftKey) redo(); else undo(); return; }
   if(mod&&e.code==='KeyY'){ e.preventDefault(); redo(); return; }
-  if(e.code==='Delete'||e.code==='Backspace'){ if(E.sel){ e.preventDefault(); snapshot(); if(deleteSel()) changed(); else E.undo.pop(); } return; }
-  if(e.code==='KeyR'&&!mod){ rotateSel(e.shiftKey?-1:1); return; }
-  if(e.code==='Escape'){ E.sel=null; E.drag=null; buildPanel(); draw(); return; }
+  if(e.code==='Delete'||e.code==='Backspace'){ if(E.multi){ e.preventDefault(); snapshot(); if(deleteMulti()) changed(); else E.undo.pop(); buildPanel(); return; } if(E.sel){ e.preventDefault(); snapshot(); if(deleteSel()) changed(); else E.undo.pop(); } return; }
+  if(e.code==='KeyR'&&!mod){ if(E.multi){ toast('Para girar, selecciona un solo elemento.'); return; } rotateSel(e.shiftKey?-1:1); return; }
+  if(e.code==='Escape'){ E.sel=null; E.multi=null; E.drag=null; setTool('sel'); buildPanel(); draw(); return; } // vuelve altiro a Seleccionar
   if(e.code==='Space'){ E.space=true; e.preventDefault(); return; }
   if(e.code==='KeyV'&&!mod) setTool('sel');
 });
@@ -1983,7 +2000,7 @@ function bossColor(b){ return (LOOK_BY[b.look]||LOOKS[0]).color; }
 function buildBossPanel(){
   const sec=$('secBoss'); sec.textContent=''; sec.append(el('h4',{text:'Jefes'}));
   const chips=el('div',{class:'bosses'});
-  E.map.bosses.forEach((b,i)=>{ const dot=el('i'); dot.style.background=bossColor(b); chips.append(el('button',{class:'bchip'+(i===E.boss?' on':''),onclick:()=>{ E.boss=i; if(E.sel&&E.sel.kind==='wp'&&E.sel.b!==i) E.sel=null; buildPanel(); draw(); }},[dot,document.createTextNode(b.name)])); });
+  E.map.bosses.forEach((b,i)=>{ const dot=el('i'); dot.style.background=bossColor(b); chips.append(el('button',{class:'bchip'+(i===E.boss?' on':''),onclick:()=>{ E.boss=i; if(E.sel&&E.sel.kind==='wp'&&E.sel.b!==i) E.sel=null; E.multi=null; buildPanel(); draw(); }},[dot,document.createTextNode(b.name)])); });
   if(E.map.bosses.length<4) chips.append(el('button',{class:'bchip',text:'+ Agregar jefe',onclick:()=>{ snapshot(); addBoss(); setTool('ruta'); changed(); toast('Ahora haz clic en el plano para marcar sus paradas.'); }}));
   sec.append(chips);
   const b=E.map.bosses[E.boss]; if(!b){ sec.append(el('p',{text:'Agrega un jefe y dibuja su ruta con la herramienta “Ruta de jefe”.'})); return; }
@@ -1997,7 +2014,7 @@ function buildBossPanel(){
     rangeField('Velocidad al caminar',0.6,2.5,0.1,b.speed,v=>v.toFixed(1)+' m/s',v=>{ b.speed=v; }),
     el('label',{class:'f'},['Recorrido',loop]),
     el('p',{text:b.path.length?`${b.path.length} paradas. Parte en la parada 1. Con “Ruta de jefe” agregas más.`:'Sin paradas aún: elige “Ruta de jefe” y haz clic en el plano.'}),
-    el('div',{class:'row'},[el('button',{class:'ghost sm',text:'Dibujar ruta',onclick:()=>setTool('ruta')}),el('button',{class:'danger sm',text:'Eliminar jefe',onclick:()=>{ snapshot(); E.map.bosses.splice(E.boss,1); E.sel=null; clampBoss(); changed(); }})]));
+    el('div',{class:'row'},[el('button',{class:'ghost sm',text:'Dibujar ruta',onclick:()=>setTool('ruta')}),el('button',{class:'danger sm',text:'Eliminar jefe',onclick:()=>{ snapshot(); E.map.bosses.splice(E.boss,1); E.sel=null; E.multi=null; clampBoss(); changed(); }})]));
 }
 
 /* dibujo del plano */
@@ -2055,11 +2072,15 @@ function paint(){
     const [nx,ny]=toS(P[0].x,P[0].z); c.textBaseline='alphabetic'; c.fillStyle=col; c.font='700 13px Rubik, sans-serif'; c.textAlign='left'; c.fillText(b.name,nx+Math.max(9,0.3*s)+3,ny-Math.max(9,0.3*s));
     c.globalAlpha=1; });
   // selección
-  const so=selRef(E.sel);
+  if(E.drag&&E.drag.type==='box'){ const [ax,ay]=toS(E.drag.a.x,E.drag.a.z), [bx,by]=toS(E.drag.b.x,E.drag.b.z); c.save(); c.fillStyle='rgba(255,207,63,.08)'; c.fillRect(Math.min(ax,bx),Math.min(ay,by),Math.abs(bx-ax),Math.abs(by-ay)); c.setLineDash([6,4]); c.strokeStyle='#ffcf3f'; c.lineWidth=1.5; c.strokeRect(Math.min(ax,bx),Math.min(ay,by),Math.abs(bx-ax),Math.abs(by-ay)); c.restore(); }
+  if(E.multi) for(const q of E.multi){ const o=selRef(q); if(!o) continue;
+    if(q.kind==='item'){ const b=itemBounds(o), [x,y]=toS(b.x0,b.z0); c.strokeStyle='#ffcf3f'; c.lineWidth=2; c.setLineDash([5,3]); c.strokeRect(x-2,y-2,(b.x1-b.x0)*s+4,(b.z1-b.z0)*s+4); c.setLineDash([]); }
+    else { const [x,y]=toS(o.x,o.z); c.strokeStyle='#ffcf3f'; c.lineWidth=2; c.beginPath(); c.arc(x,y,Math.max(11,0.5*s),0,TAU); c.stroke(); } }
+  const so=E.multi?null:selRef(E.sel);
   if(so&&E.sel.kind==='item'){ const b=itemBounds(so), [x,y]=toS(b.x0,b.z0); c.strokeStyle='#ffcf3f'; c.lineWidth=2; c.setLineDash([5,3]); c.strokeRect(x-2,y-2,(b.x1-b.x0)*s+4,(b.z1-b.z0)*s+4); c.setLineDash([]); }
   if(so&&E.sel.kind==='obj'&&so){ const [x,y]=toS(so.x,so.z); c.strokeStyle='#ffcf3f'; c.lineWidth=2; c.beginPath(); c.arc(x,y,Math.max(13,0.6*s),0,TAU); c.stroke(); }
   if(so&&E.sel.kind==='wp'){ const [x,y]=toS(so.x,so.z), a=so.face*D2R, [hx2,hy2]=toS(so.x+Math.sin(a)*1.6,so.z-Math.cos(a)*1.6); c.strokeStyle='#ffffff'; c.lineWidth=1.5; c.beginPath(); c.moveTo(x,y); c.lineTo(hx2,hy2); c.stroke(); }
-  for(const h of handlesOf(E.sel)){ const [x,y]=toS(h.x,h.z); c.fillStyle='#ffffff'; c.strokeStyle='#1b1f27'; c.lineWidth=2; c.beginPath(); c.arc(x,y,6,0,TAU); c.fill(); c.stroke(); }
+  for(const h of (E.multi?[]:handlesOf(E.sel))){ const [x,y]=toS(h.x,h.z); c.fillStyle='#ffffff'; c.strokeStyle='#1b1f27'; c.lineWidth=2; c.beginPath(); c.arc(x,y,6,0,TAU); c.fill(); c.stroke(); }
   // bordes del mapa: manillas y vista previa al arrastrar
   if(TOOL_BY[E.tool].kind==='select'){ const W=E.map.size.w, D=E.map.size.d, dg=E.drag&&E.drag.type==='border'?E.drag:null;
     const [bx0,bx1,bz0,bz1]=dg?borderBounds(dg):[-W/2,W/2,-D/2,D/2], [px0,py0]=toS(bx0,bz0), [px1,py1]=toS(bx1,bz1);
