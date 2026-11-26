@@ -446,6 +446,7 @@ const ETAPA3={"v":1,"name":"Etapa 3 · Piso 9","estilo":"loft","size":{"w":46,"d
 // Etapas en prueba: solo aparecen en dev. Para publicar una, sácala de esta lista.
 const SOLO_DEV={etapa3:ETAPA3};
 const ES_PROD=['operacion-cafecito.pages.dev','dnljrh-source.github.io'].includes(location.hostname);
+const EDITOR_ON=!ES_PROD; // el editor de mapas no existe en prod
 const BUILTIN=Object.assign({original:ORIGINAL,etapa2:ETAPA2},ES_PROD?{}:SOLO_DEV);
 const isBuiltin=id=>Object.prototype.hasOwnProperty.call(BUILTIN,id);
 
@@ -1309,7 +1310,7 @@ function fillMapSelect(sel,selected,includeOriginal){
   sel.textContent='';
   const add=(v,t)=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; sel.appendChild(o); };
   if(includeOriginal) for(const k of Object.keys(BUILTIN)) add(k,BUILTIN[k].name+(sel.id==='eMap'?(cloudEdit()?' (oficial)':' (solo lectura)'):''));
-  for(const [id,d] of sortedDocs()) add(id,d.name+(d.status==='afinado'?' · afinado':d.status==='para-afinar'?' · para afinar':''));
+  if(EDITOR_ON) for(const [id,d] of sortedDocs()) add(id,d.name+(d.status==='afinado'?' · afinado':d.status==='para-afinar'?' · para afinar':''));
   if([...sel.options].some(o=>o.value===selected)) sel.value=selected;
 }
 let menuPick='original';
@@ -1530,6 +1531,7 @@ let cw=0, ch=0;
 function setTool(id){ E.tool=id; for(const b of document.querySelectorAll('.tool')) b.classList.toggle('on',b.dataset.tool===id); updateHint(); draw(); }
 
 function openEditor(id){
+  if(!EDITOR_ON){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} showScreen('menu'); return; }
   if(engine) engine.suspend(true);
   showScreen(null); document.body.classList.add('editing'); document.body.classList.remove('playing');
   if(!E.map||(id&&id!==E.id)) loadIntoEditor(id&&mapById(id)?id:(E.id||'original'));
@@ -1948,7 +1950,8 @@ function hexA(hex,a){ const n=parseInt(hex.slice(1),16); return `rgba(${n>>16&25
 /* ================= arranque ================= */
 refreshMenu();
 if(engine) engine.load(ORIGINAL,'original',ORIGINAL.name);
-if(location.hash==='#editor') openEditor('original'); else showScreen('menu');
+if(!EDITOR_ON) $('editBtn').remove();
+if(location.hash==='#editor'&&EDITOR_ON) openEditor('original'); else showScreen('menu');
 window.__cafe={engine,E,layout,validate,sanitizeMap,ORIGINAL,ETAPA2,ETAPA3,Store,openEditor,loadIntoEditor,geo:{pointHits,segBlocked,rayLen,lineSnap}};
 })();
 </script>
