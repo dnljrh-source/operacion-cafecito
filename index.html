@@ -838,6 +838,43 @@ function createEngine(){
 
   /* objetos del nivel */
   let WALL=0xebe5d9, CORE=0xebe5d9, loft=false; const PART=0x7f93a8, TOPC=0xd9dde2;
+  /* cielo loft adaptado al plano: ductos, cañerías y lámparas solo donde hay espacio libre, separados de muros y vidrios */
+  function buildCeiling(W,D,hx,hz){
+    const tall=LV.solids.filter(s=>s.h>=2.5), walls=tall.filter(s=>s.blocks), G=0.5, nx=Math.ceil(W/G), nz=Math.ceil(D/G);
+    // zona interior del edificio: se inunda desde el inicio pasando por vidrios (así entra el hall de ascensores) pero no por muros
+    const inside=new Uint8Array(nx*nz), idx=(i,j)=>j*nx+i, cx=i=>-hx+(i+0.5)*G, cz=j=>-hz+(j+0.5)*G;
+    const free=(i,j)=>!pointHits(walls,cx(i),cz(j),0.12);
+    const si=clamp(Math.floor((LV.start.x+hx)/G),0,nx-1), sj=clamp(Math.floor((LV.start.z+hz)/G),0,nz-1), q=[[si,sj]]; inside[idx(si,sj)]=1;
+    while(q.length){ const [i,j]=q.pop(); for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){ const u=i+a,v=j+b; if(u<0||v<0||u>=nx||v>=nz||inside[idx(u,v)]||!free(u,v)) continue; inside[idx(u,v)]=1; q.push([u,v]); } }
+    const isIn=(x,z)=>{ const i=Math.floor((x+hx)/G), j=Math.floor((z+hz)/G); return i>=0&&j>=0&&i<nx&&j<nz&&inside[idx(i,j)]===1; };
+    const ok=(x,z,clr)=>isIn(x,z)&&!pointHits(tall,x,z,clr);
+    // tramos libres a lo largo de x (o de z) con cierta holgura
+    function runs(along,fixed,clr,minLen){ const out=[]; let a=null; const lim=along==='x'?hx:hz, step=0.25;
+      for(let t=-lim+0.3;t<=lim-0.3+1e-6;t+=step){ const good=along==='x'?ok(t,fixed,clr):ok(fixed,t,clr);
+        if(good&&a===null) a=t; if((!good||t+step>lim-0.3)&&a!==null){ const b=good?t:t-step; if(b-a>=minLen) out.push([a,b]); a=null; } } return out; }
+    const total=r=>r.reduce((s,[a,b])=>s+b-a,0);
+    // ductos: hasta 2 filas con más recorrido libre, separadas al menos 5 m
+    const cand=[]; for(let z=-hz+1;z<=hz-1;z+=0.5) cand.push([z,runs('x',z,0.8,2.5)]);
+    cand.sort((A,B)=>total(B[1])-total(A[1])); const ductZ=[];
+    for(const [z,r] of cand){ if(ductZ.length>=2||total(r)<6) break; if(ductZ.some(d=>Math.abs(d.z-z)<5)) continue; ductZ.push({z,r}); }
+    for(const {z,r} of ductZ) for(const [a,b] of r){ const L=b-a+0.3, m=(a+b)/2; box(0xb9bdc1,L,0.42,0.75,m,2.92,z,null,true);
+      for(let x=a;x<=b;x+=1.5) box(0x9ea3a8,0.04,0.44,0.77,x,2.92,z,null,true); for(const e of [a-0.15,b+0.15]) box(0xa7acb1,0.05,0.46,0.79,e,2.92,z,null,true);
+      for(let x=a+1.2;x<b-0.6;x+=4.5) box(0x7e848a,0.5,0.03,0.3,x,2.695,z,null,true); }
+    const nearDuct=(z,m)=>ductZ.some(d=>Math.abs(d.z-z)<m);
+    // cañerías rojas: filas principales a lo largo de x y ramales a lo largo de z
+    const pc=[]; for(let z=-hz+1.2;z<=hz-1.2;z+=0.5){ if(nearDuct(z,0.9)) continue; pc.push([z,runs('x',z,0.35,3)]); }
+    pc.sort((A,B)=>total(B[1])-total(A[1])); const pipeZ=[];
+    for(const [z,r] of pc){ if(pipeZ.length>=3||total(r)<6) break; if(pipeZ.some(p=>Math.abs(p.z-z)<3.5)) continue; pipeZ.push({z,r}); }
+    for(const {z,r} of pipeZ) for(const [a,b] of r){ const m=cyl(0xb52a33,0.12,b-a,0.12,(a+b)/2,3.0,z,null,true); m.rotation.z=Math.PI/2; }
+    for(let x=-hx+3;x<hx-1;x+=6.5) for(const [a,b] of runs('z',x,0.35,2.5)){ const m=cyl(0xb52a33,0.08,b-a,0.08,x,2.94,(a+b)/2,null,true); m.rotation.x=Math.PI/2;
+      for(let z=a+0.8;z<b-0.4;z+=3.5) cyl(0xb52a33,0.05,0.18,0.05,x,2.83,z,null,true); }
+    // lámparas lineales: grilla regular; si no cabe, se corre un poco o se omite
+    const fits=(x,z)=>{ if(nearDuct(z,0.75)) return false; for(let u=-1.15;u<=1.151;u+=0.575) if(!ok(x+u,z,0.4)) return false; return true; };
+    for(let z=-hz+1.6;z<hz-0.8;z+=3.2) for(let x=-hx+2.2;x<hx-1;x+=3.4){
+      let pz=null; for(const dz of [0,0.6,-0.6,1.2,-1.2]) if(fits(x,z+dz)){ pz=z+dz; break; } if(pz===null) continue;
+      box(0x1b1c1f,2.3,0.07,0.12,x,2.55,pz,null,true); box(MB(0xfffaf0),2.26,0.012,0.08,x,2.512,pz,null,true);
+      for(const sd of [-1,1]) box(0x222326,0.012,0.6,0.012,x+sd*0.95,2.88,pz,null,true); }
+  }
   function winFace(cx,cz,len,yaw,sd){ // ventanal visto desde un lado: ciudad, cortinas blancas, perfiles
     const g=new THREE.Group(); g.position.set(cx,0,cz); g.rotation.y=yaw; root.add(g);
     const t=TEX.city.clone(); t.needsUpdate=true; t.repeat.set(Math.max(0.3,len/6),1);
@@ -935,7 +972,10 @@ function createEngine(){
         box(0xe9ebee,0.6,0.35,0.5,-0.3,0.93,0,g); box(0x3a3f47,0.5,0.02,0.4,-0.3,1.11,0,g,true); break; }
       case 'cajas': box(0xb88d55,0.9,0.8,0.9,p.x,0.4,p.z); box(0xc9a46b,0.7,0.4,0.7,p.x,1.0,p.z); break;
       case 'tele': { const [x,z]=snapWall(p.x,p.z,p.yaw,L.solids,0.05); const g=group(x,z,p.yaw); box(0x2a2d33,2.0,1.2,0.06,0,1.7,0,g,true); box(MB(0x5aa7d8),1.84,1.05,0.01,0,1.7,0.035,g,true); box(MB(0xffffff),0.6,0.08,0.01,-0.4,1.9,0.042,g,true); break; }
-      case 'letrero': { const [x,z]=snapWall(p.x,p.z,p.yaw,L.solids,0.04); const t=String(p.text||''); signMesh(t||' ',x,2.75,z,p.yaw,Math.min(2.4,Math.max(1.2,t.length*0.13)),/COCINA/i.test(t)?'#8a3b2f':/^LOVE$/i.test(t)?'#2b8fe0':/EVACUACI|SALIDA/i.test(t)?'#1f8a4c':'#2b3442'); break; }
+      case 'letrero': { // se pega al muro de atrás solo si está cerca; si no (p. ej. sobre una puerta) cuelga del cielo
+        const bx=-Math.sin(p.yaw), bz=-Math.cos(p.yaw), near=rayLen(L.solids.filter(s=>s.h>=2.5),p.x+Math.sin(p.yaw)*0.4,p.z+Math.cos(p.yaw)*0.4,bx,bz,1.6)<1.0;
+        const [x,z]=near?snapWall(p.x,p.z,p.yaw,L.solids,0.04):[p.x,p.z]; const t=String(p.text||'');
+        if(!near){ const w=Math.min(2.4,Math.max(1.2,t.length*0.13)), ux=Math.cos(p.yaw), uz=-Math.sin(p.yaw); for(const sd of [-1,1]) box(0x2a2d33,0.012,0.55,0.012,x+ux*sd*w*0.4,2.93,z+uz*sd*w*0.4,null,true); } const sw=Math.min(2.4,Math.max(1.2,t.length*0.13)); signMesh(t||' ',x,2.7-sw/8,z,p.yaw,sw,/COCINA/i.test(t)?'#8a3b2f':/^LOVE$/i.test(t)?'#2b8fe0':/EVACUACI|SALIDA/i.test(t)?'#1f8a4c':'#2b3442'); break; }
       case 'capsule': { const g=group(p.x,p.z,p.yaw); box(0x8d97a3,0.8,0.9,0.45,0,0.45,0,g); box(0xd8452f,0.42,0.26,0.32,0,1.03,0.02,g); box(0xfff1d6,0.24,0.12,0.02,0,1.04,0.185,g,true);
         for(let i=0;i<3;i++) cyl(0xd8452f,0.06,0.04,0.06,-0.1+i*0.1,1.18,0.08,g); break; }
       case 'machine': { const g=group(p.x,p.z,p.yaw); box(loft?0xf3f3f1:0xdedad0,1.2,0.9,0.65,0,0.45,0,g); box(loft?0xe0cfb2:0x3a3f47,1.24,0.05,0.69,0,0.93,0,g);
@@ -985,13 +1025,7 @@ function createEngine(){
     if(loft){
       const ct=TEX.hormigon.clone(); ct.needsUpdate=true; ct.repeat.set(W/3,D/3);
       const ceil=new THREE.Mesh(new THREE.PlaneGeometry(W+0.4,D+0.4),own(new THREE.MeshToonMaterial({color:0xffffff,map:ct,gradientMap:grad}))); ceil.rotation.x=Math.PI/2; ceil.position.set(0,3.2,0); root.add(ceil);
-      const ducts=[-hz+4.2,hz-6.4];
-      for(const z of ducts){ box(0xb9bdc1,W,0.42,0.75,0,2.9,z,null,true); for(let x=-hx+1;x<hx;x+=1.5) box(0x9ea3a8,0.04,0.44,0.77,x,2.9,z,null,true); }
-      for(const z of [-hz+2.2,-0.6,hz-3.4]){ const m=cyl(0xb52a33,0.12,W,0.12,0,3.0,z,null,true); m.rotation.z=Math.PI/2; }
-      for(let x=-hx+3;x<hx;x+=6.5){ const m=cyl(0xb52a33,0.08,D,0.08,x,2.94,0,null,true); m.rotation.x=Math.PI/2; for(let z=-hz+2;z<hz;z+=4) cyl(0xb52a33,0.05,0.18,0.05,x,2.83,z,null,true); }
-      for(const z of [-hz+1.4,-hz+6.4,-hz+9.6,hz-4.6,hz-2.2]) for(let x=-hx+2.2;x<hx-1;x+=3.4){
-        box(0x1b1c1f,2.3,0.07,0.12,x,2.55,z,null,true); box(MB(0xfffaf0),2.26,0.012,0.08,x,2.512,z,null,true);
-        for(const s of [-1,1]) box(0x222326,0.012,0.6,0.012,x+s*0.95,2.88,z,null,true); }
+      buildCeiling(W,D,hx,hz);
       for(const [cx,cz,len,ry] of [[0,-hz+0.16,W-0.4,0],[0,hz-0.16,W-0.4,Math.PI],[-hx+0.16,0,D-0.4,Math.PI/2],[hx-0.16,0,D-0.4,-Math.PI/2]]) winFace(cx,cz,len,ry,(cx+cz)*3|0);
     } else {
     const ceil=new THREE.Mesh(new THREE.PlaneGeometry(W+0.4,D+0.4),M(0xf2f1ec)); ceil.rotation.x=Math.PI/2; ceil.position.set(0,3.2,0); root.add(ceil);
