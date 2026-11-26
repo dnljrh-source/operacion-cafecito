@@ -949,6 +949,10 @@ function createEngine(){
   const P={x:0,z:0,yaw:0,pitch:0,eye:STAND_EYE,crouch:false,running:false,moving:false,noisy:false,capsule:false,coffee:false,brew:0,brewing:false,bob:0,warned:false};
   const game={state:'menu',time:0,catcher:null,overlay:false,spotted:0,maxS:0,seen:false};
   const keys={};
+  let run={ruta:[],next:0,seq:0}, runSeq=0; // recorrido para validar el puntaje en el servidor
+  const R2=v=>Math.round(v*100)/100;
+  function rec(){ const s=[R2(game.time),R2(P.x),R2(P.z),(P.capsule?1:0)|(P.coffee?2:0)], l=run.ruta[run.ruta.length-1];
+    if(l&&l[0]>=s[0]) run.ruta[run.ruta.length-1]=s; else run.ruta.push(s); }
   let ghost=false, ghostUsed=false, ghostInit=false; // modo fantasma: solo en dev, tecla G
   function setGhost(v){ ghost=v; if(v) ghostUsed=true; const el=document.getElementById('ghostBadge'); if(el){ el.hidden=!v; } }
   const markerGeo=new THREE.OctahedronGeometry(0.16,0), markerMat=new THREE.MeshBasicMaterial({color:0xffcf3f,depthTest:false,transparent:true,opacity:0.95});
@@ -1000,7 +1004,7 @@ function createEngine(){
     OBJP={capsule:o.capsule?{x:o.capsule.x,y:1.85,z:o.capsule.z}:null,machines:ms.map(q=>({x:q.x,y:2.1,z:q.z})),desk:{x:o.desk.x,y:1.75,z:o.desk.z}};
     inter=[];
     if(o.capsule) inter.push({x:o.capsule.x,z:o.capsule.z,r:1.9,prompt:()=>P.capsule||P.coffee?null:'Tomar una cápsula de café',ready:()=>!P.capsule&&!P.coffee,
-      act(){ P.capsule=true; sfx.pick(); toast(ms.length>1&&found<0?'Cápsula en mano. Ahora, encuentra la cafetera con café.':'Cápsula en mano. Ahora, a la cafetera.'); }});
+      act(){ P.capsule=true; rec(); sfx.pick(); toast(ms.length>1&&found<0?'Cápsula en mano. Ahora, encuentra la cafetera con café.':'Cápsula en mano. Ahora, a la cafetera.'); }});
     ms.forEach((q,i)=>inter.push({x:q.x,z:q.z,r:1.9,get hold(){ return found===i; },
       prompt:()=>{ if(P.coffee) return null; if(found===i) return o.capsule&&!P.capsule?'Tiene café, pero te falta la cápsula':'Mantén E para preparar el café'; if(checked.has(i)) return 'Esta cafetera no tiene café'; return 'Revisar si esta cafetera tiene café'; },
       ready:()=>{ if(P.coffee) return false; if(found===i) return !o.capsule||P.capsule; return !checked.has(i); },
@@ -1087,6 +1091,8 @@ function createEngine(){
     $('mapTitle').textContent=current.name||'Objetivos';
     if(typeof ENV!=='undefined'&&ENV==='dev'&&!ghostInit){ ghostInit=true; setGhost(true); } ghostUsed=ghost;
     clearKeys(); game.state='play'; showScreen(null); document.body.classList.add('playing'); suspended=false;
+    run={ruta:[],next:0.25,seq:++runSeq}; rec();
+    document.dispatchEvent(new CustomEvent('cafe-start',{detail:{m:current.name||'Mapa',fromEditor:current.fromEditor,seq:run.seq}}));
     setDrag(dragMode); requestLock(); try{ canvas.focus({preventScroll:true}); }catch(e){}
     const hint=LV.obj.capsule?'Primero, la cápsula. Sigue el rombo amarillo.':LV.obj.machines.length>1?'Hoy solo una cafetera tiene café. Revisa las marcadas con rombo.':'Ve a la cafetera. Sigue el rombo amarillo.';
     setTimeout(()=>{ if(game.state==='play') toast(hint,3.2); },400);
@@ -1097,7 +1103,7 @@ function createEngine(){
   function caught(b){ if(game.state!=='play') return; game.state='caught'; game.catcher=b; b.susp=1; clearKeys(); sfx.caught(); releaseLock(); document.body.classList.remove('drag','crouch');
     $('cQuote').textContent='“'+b.lines[Math.floor(Math.random()*b.lines.length)]+'”'; $('cWho').textContent=b.name+', '+b.role.toLowerCase();
     setTimeout(()=>{ if(game.state==='caught'){ game.overlay=true; showScreen('caught'); document.body.classList.remove('playing'); } },1100); }
-  function win(){ if(game.state!=='play') return; game.state='win'; clearKeys(); sfx.win(); releaseLock(); document.body.classList.remove('drag','crouch','playing');
+  function win(){ if(game.state!=='play') return; rec(); game.state='win'; clearKeys(); sfx.win(); releaseLock(); document.body.classList.remove('drag','crouch','playing');
     const t=game.time, key='cafecito-best-'+current.key; let best=null, isBest=false; try{ best=parseFloat(localStorage.getItem(key))||null; }catch(e){}
     if(!best||t<best){ best=t; isBest=true; try{ localStorage.setItem(key,String(t)); }catch(e){} }
     $('wTime').textContent=fmt2(t); $('wSpot').textContent=String(game.spotted); $('wBest').textContent=fmt2(best)+(isBest?' ★':'');
@@ -1105,7 +1111,7 @@ function createEngine(){
     game.overlay=true; showScreen('win');
     try{ const o=LV.obj, sp=LV.start, hy=(a,b)=>Math.max(0,Math.hypot(a.x-b.x,a.z-b.z)-1.9);
       const lb=Math.min(...o.machines.map(m=>((o.capsule?hy(sp,o.capsule)+hy(o.capsule,m):hy(sp,m))/SPEED.run)+BREW_TIME+hy(m,o.desk)/SPEED.walk));
-      document.dispatchEvent(new CustomEvent('cafe-win',{detail:{m:current.name||'Mapa',t,s:game.spotted,st:game.spotted===0&&game.maxS<0.3?3:game.spotted===0?2:1,lb,fromEditor:current.fromEditor,ghost:ghostUsed}})); }catch(e){ console.error(e); } }
+      document.dispatchEvent(new CustomEvent('cafe-win',{detail:{m:current.name||'Mapa',t,s:game.spotted,st:game.spotted===0&&game.maxS<0.3?3:game.spotted===0?2:1,lb,fromEditor:current.fromEditor,ghost:ghostUsed,seq:run.seq,ruta:run.ruta.slice()}})); }catch(e){ console.error(e); } }
   $('retryBtn').addEventListener('click',restart); $('againBtn').addEventListener('click',restart); $('restartBtn').addEventListener('click',restart); $('resumeBtn').addEventListener('click',resume);
   let currentTarget=null;
   window.addEventListener('keydown',e=>{
@@ -1149,7 +1155,7 @@ function createEngine(){
     currentTarget=best; P.brewing=false;
     if(best&&best.hold&&best.ready()&&keys.KeyE){ P.brewing=true; const before=P.brew; P.brew=Math.min(1,P.brew+dt/BREW_TIME);
       if(Math.floor(before*16)!==Math.floor(P.brew*16)) sfx.brew();
-      if(P.brew>=1){ P.coffee=true; P.capsule=false; sfx.done(); toast('¡Café listo! Vuelve a tu escritorio, sin correr.'); } }
+      if(P.brew>=1){ P.coffee=true; P.capsule=false; rec(); sfx.done(); toast('¡Café listo! Vuelve a tu escritorio, sin correr.'); } }
   }
   function canSee(b){ const dx=P.x-b.x, dz=P.z-b.z, d=Math.hypot(dx,dz), range=P.crouch?VIEW.crouch:VIEW.stand;
     if(d>range) return -1; if(d>VIEW.sense&&Math.abs(angDiff(Math.atan2(dx,dz),b.yaw))>VIEW.fov) return -1;
@@ -1222,7 +1228,7 @@ function createEngine(){
     const dt=Math.min(0.066,Math.max(0,(now-last)/1000)); last=now;
     if(suspended||!root) return;
     try{
-      if(game.state==='play'){ updatePlayer(dt); game.time+=dt; }
+      if(game.state==='play'){ updatePlayer(dt); game.time+=dt; if(game.time>=run.next){ rec(); run.next=game.time+0.25; } }
       if(game.state==='play'||game.state==='menu') for(const b of bosses) updateBoss(b,dt,game.state==='play');
       for(const b of bosses) drawBoss(b,now);
       workers.forEach((w,i)=>{ const t=now*0.012+i*1.7; w.armL.rotation.x=-1.1+Math.sin(t)*0.08; w.armR.rotation.x=-1.1+Math.cos(t*1.3)*0.08; w.head.rotation.y=Math.sin(now*0.0004+i)*0.25; });
@@ -1244,7 +1250,8 @@ function createEngine(){
     }catch(err){ console.error(err); }
   }
   requestAnimationFrame(frame);
-  const api={load,start,state:()=>game.state,suspend(v){ suspended=v; if(v){ releaseLock(); clearKeys(); } else last=performance.now(); },
+  const api={load,start,state:()=>game.state,
+    setWorking(seq,i){ if(seq===run.seq&&game.state==='play'&&LV&&found<0&&Number.isInteger(i)&&i>=0&&i<LV.obj.machines.length) working=i; },suspend(v){ suspended=v; if(v){ releaseLock(); clearKeys(); } else last=performance.now(); },
     toMenu(){ game.state='menu'; releaseLock(); document.body.classList.remove('playing','drag','crouch'); },
     debug:{screen:screenCanvas,P,game,get bosses(){return bosses;},get solids(){return solids;},canSee}};
   return api;
@@ -1305,14 +1312,14 @@ async function cloudLoad(){
 }
 async function supa(path,opts){
   const o=opts||{}; const r=await fetch(SUPA.url+'/rest/v1/'+path,{method:o.method||'GET',body:o.body,headers:Object.assign({apikey:SUPA.key,'Content-Type':'application/json'},o.headers||{})});
-  if(!r.ok){ let m=''; try{ m=(await r.json()).message||''; }catch(e){} const err=new Error('HTTP '+r.status+' '+m); err.status=r.status; throw err; }
+  if(!r.ok){ let m=''; try{ m=(await r.json()).message||''; }catch(e){} const err=new Error('HTTP '+r.status+' '+m); err.status=r.status; err.server=m; throw err; }
   const txt=await r.text(); return txt?JSON.parse(txt):null;
 }
 async function bestList(mapa){
   const rows=await supa(SUPA.table+'?select=nombre,tiempo,visto,estrellas,creado&mapa=eq.'+encodeURIComponent(mapa)+'&order=tiempo.asc,estrellas.desc,visto.asc,creado.asc&limit=1000');
   const seen=new Set(), out=[]; for(const r of (Array.isArray(rows)?rows:[])){ const k=String(r.nombre||'').trim().toLowerCase(); if(!k||seen.has(k)) continue; seen.add(k); out.push(r); } return out;
 }
-const netMsg=e=>e&&e.status>=400&&e.status<500?'El ranking rechazó el puntaje.':'No se pudo conectar con el ranking. Revisa tu conexión e intenta de nuevo.';
+const netMsg=e=>e&&e.status>=400&&e.status<500?(e.server||'El ranking rechazó el puntaje.'):'No se pudo conectar con el ranking. Revisa tu conexión e intenta de nuevo.';
 function fillRows(tbody,rows,me,withDate){
   tbody.textContent='';
   rows.forEach((r,i)=>{ const tr=document.createElement('tr'); if(me&&String(r.nombre).trim().toLowerCase()===me.n.toLowerCase()&&Math.abs(Number(r.tiempo)-me.t)<0.011) tr.className='me';
@@ -1323,8 +1330,18 @@ function fillRows(tbody,rows,me,withDate){
 }
 let myName=''; try{ myName=localStorage.getItem('cafecito-nombre')||''; }catch(e){}
 let lastRun=null, saving=false;
+// Cada partida se registra en el servidor al empezar: anota la hora y sortea la cafetera con café.
+let curRun={seq:0,id:null,wait:null,err:''};
+document.addEventListener('cafe-start',ev=>{
+  const d=ev.detail; curRun={seq:d.seq,id:null,wait:null,err:''};
+  if(!rankingOn||d.fromEditor) return;
+  const r=curRun;
+  r.wait=supa('rpc/iniciar_partida',{method:'POST',body:JSON.stringify({p_entorno:ENV,p_mapa:d.m})})
+    .then(res=>{ if(res&&res.id){ r.id=res.id; if(engine) engine.setWorking(d.seq,Number(res.cafetera)); } else r.err='No se pudo registrar la partida.'; })
+    .catch(e=>{ console.error(e); r.err=e&&e.status>=400&&e.status<500?(e.server||'No se pudo registrar la partida.'):'Sin conexión al empezar: esta partida no se puede guardar.'; });
+});
 document.addEventListener('cafe-win',ev=>{
-  const d=ev.detail; lastRun={m:d.m,t:Math.round(d.t*100)/100,s:d.s,st:d.st,lb:d.lb,saved:false};
+  const d=ev.detail; lastRun={m:d.m,t:Math.round(d.t*100)/100,s:d.s,st:d.st,lb:d.lb,seq:d.seq,ruta:d.ruta,saved:false};
   const box=$('saveBox'); box.hidden=!rankingOn||d.fromEditor||d.ghost; if(box.hidden) return;
   $('wName').value=myName; $('wSave').disabled=false; $('wTopBox').hidden=true;
   $('wMsg').textContent=lastRun.t<Math.max(8,lastRun.lb*0.97)?'Ese tiempo es más rápido de lo que permite el mapa, así que no se puede guardar.':'¿Quieres anotarte?';
@@ -1337,7 +1354,12 @@ $('wSave').addEventListener('click',async()=>{
   const n=$('wName').value.trim().slice(0,20); if(!n){ $('wMsg').textContent='Primero escribe tu nombre.'; $('wName').focus(); return; }
   saving=true; $('wSave').disabled=true; $('wMsg').textContent='Guardando…';
   try{
-    await supa(SUPA.table,{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({nombre:n,mapa:lastRun.m,tiempo:lastRun.t,visto:lastRun.s,estrellas:lastRun.st})});
+    const r=curRun; if(r.seq!==lastRun.seq) throw Object.assign(new Error('partida'),{status:400,server:'Esta partida ya no se puede guardar.'});
+    if(!r.id&&r.wait) await r.wait;
+    if(!r.id){ lastRun.saved=true; $('wMsg').textContent=r.err||'Esta partida no quedó registrada, así que no se puede guardar.'; saving=false; return; }
+    const res=await supa('rpc/guardar_puntaje',{method:'POST',body:JSON.stringify({p_partida:r.id,p_nombre:n,p_tiempo:lastRun.t,p_visto:lastRun.s,p_estrellas:lastRun.st,p_ruta:lastRun.ruta})});
+    if(!res||res.ok!==true){ const msg=(res&&res.error)||'El ranking rechazó el puntaje.';
+      $('wMsg').textContent=msg; if(/nombre/i.test(msg)){ $('wSave').disabled=false; $('wName').focus(); } else lastRun.saved=true; saving=false; return; }
     lastRun.saved=true;
     const list=await bestList(lastRun.m); const pos=list.findIndex(r=>String(r.nombre).trim().toLowerCase()===n.toLowerCase())+1;
     const mine=list[pos-1]; const improved=mine&&Math.abs(Number(mine.tiempo)-lastRun.t)<0.011;
