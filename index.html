@@ -960,6 +960,9 @@ function createEngine(){
           const tx=new THREE.CanvasTexture(c); for(const sz of [1,-1]){ const m=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.23),own(new THREE.MeshBasicMaterial({map:tx}))); m.position.set(0,2.45,sz*0.085); if(sz<0) m.rotation.y=Math.PI; g.add(m); }
           box(0x30353b,0.66,0.27,0.08,0,2.45,0,g,true); }
         else { for(const sz of [-1,1]) box(0xd6d9dc,0.04,0.04,0.12,DW-0.1,1.0,sz*0.06,piv,true); }
+        if(!ex){ // vidrio fijo sobre la puerta hasta el cielo
+          const gm=new THREE.Mesh(BOX,own(new THREE.MeshBasicMaterial({color:0xbfe6ff,transparent:true,opacity:0.22,depthWrite:false}))); gm.scale.set(DW+0.12,0.92,0.03); gm.position.set(0,2.74,0); gm.renderOrder=3; g.add(gm);
+          for(const sd of [-1,1]) box(FR,0.06,0.96,0.12,sd*(DW/2+0.03),2.72,0,g,true); box(FR,DW+0.12,0.05,0.12,0,3.175,0,g,true); }
         doors.push({piv,ex,sid:p.sid,x:p.x,z:p.z,yaw:p.yaw,ang:0,target:0,open:false,hold:0}); break; }
       case 'wc': { const g=group(p.x,p.z,p.yaw), W=0xf4f6f7;
         cyl(W,0.3,0.36,0.34,0,0.18,0.08,g); cyl(W,0.4,0.06,0.48,0,0.39,0.1,g); box(0xe7eaec,0.38,0.03,0.44,0,0.43,0.1,g,true);
