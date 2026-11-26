@@ -53,7 +53,7 @@ begin
   if char_length(v_nombre) < 1 or char_length(v_nombre) > 20 then return json_build_object('ok', false, 'error', 'Escribe un nombre de 1 a 20 letras'); end if;
   if public.nombre_bloqueado(v_nombre) then return json_build_object('ok', false, 'error', 'Ese nombre no está permitido. Prueba con otro.'); end if;
 
-  d := pa.doc; o := d->'obj'; desk := o->'desk'; mq := o->'machines'->pa.cafetera;
+  d := pa.doc; o := d->'obj'; desk := d->'start'; mq := o->'machines'->pa.cafetera;  -- el escritorio es el punto de inicio
   cap := case when jsonb_typeof(o->'capsule') = 'object' then o->'capsule' else null end;
   transcurrido := extract(epoch from now() - pa.inicio);
 
