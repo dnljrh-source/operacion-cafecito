@@ -1438,6 +1438,10 @@ function createEngine(){
           if(d<1e-6){ if(so.seg){ nx=-(so.bz-so.az); nz=so.bx-so.ax; } else { const l=b.x-so.x0,r=so.x1-b.x,u=b.z-so.z0,w=so.z1-b.z,m=Math.min(l,r,u,w); nx=m===l?-1:m===r?1:0; nz=m===u?-1:m===w?1:0; } d=Math.hypot(nx,nz)||1; nx/=d; nz/=d; d=0; }
           else { nx/=d; nz/=d; }
           b.x=cx+nx*rr; b.z=cz+nz*rr; const vn=b.vx*nx+b.vz*nz; if(vn<0){ if(vn<-1.2) ballNoise(b,-vn); b.vx-=1.65*vn*nx; b.vz-=1.65*vn*nz; } }
+        // los jefes también son cuerpos: la pelota rebota en ellos (y se dan cuenta)
+        for(const k of bosses){ if(b.y-R>1.85) continue; let dx=b.x-k.x, dz=b.z-k.z, d=Math.hypot(dx,dz), rr=0.34+R; if(d>=rr) continue;
+          if(d<1e-6){ dx=1; dz=0; d=1; } dx/=d; dz/=d; b.x=k.x+dx*rr; b.z=k.z+dz*rr; const vn=b.vx*dx+b.vz*dz;
+          if(vn<0){ const hit=-vn; b.vx-=1.6*vn*dx; b.vz-=1.6*vn*dz; if(hit>1.5&&k.state!=='alert'){ tone(140,0.09,'square',0.05); toast('¡Le llegó un pelotazo a '+k.name+'!',1.8); k.state='search'; k.t=3; k.lx=b.x-b.vx*0.6; k.lz=b.z-b.vz*0.6; } } }
       }
       // el jugador la empuja al caminar contra ella
       if(b.cd<=0&&b.y<1.1){ let dx=b.x-P.x, dz=b.z-P.z, d=Math.hypot(dx,dz), rr=0.3+b.R; if(d<rr){ if(d<1e-6){ dx=-Math.sin(P.yaw); dz=-Math.cos(P.yaw); d=1; } dx/=d; dz/=d; b.x=P.x+dx*rr; b.z=P.z+dz*rr;
