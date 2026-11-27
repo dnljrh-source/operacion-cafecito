@@ -232,6 +232,16 @@ body.editing #editor{display:grid}
   <div id="status"><div id="cPost" class="chip">De pie</div><div id="cCap" class="chip off">Cápsula</div><div id="cMug" class="chip">Taza vacía</div></div>
   <div id="hint">Mantén apretado el botón del mouse y arrastra para mirar. Flechas ← → también giran.</div>
 </div>
+
+<div id="dailyCal" hidden>
+    <div class="dcard">
+      <div class="dhead"><button id="dPrev" class="ghost sm" aria-label="Mes anterior">‹</button><b id="dMonth"></b><button id="dNext" class="ghost sm" aria-label="Mes siguiente">›</button><div class="grow"></div><button id="dClose" class="ghost sm">Cerrar</button></div>
+      <p class="dnote" id="dNote"></p>
+      <div id="dKeyRow" hidden><label class="f">Clave para programar<input id="dKey" type="password" autocomplete="off"></label><button id="dKeyOk" class="sm">Entrar</button></div>
+      <div class="dgrid" id="dGrid"></div>
+      <p class="dnote" id="dMsg"></p>
+    </div>
+  </div>
 <div id="toast"></div>
 
 <div id="menu" class="screen show">
@@ -242,7 +252,7 @@ body.editing #editor{display:grid}
     </div>
     <p class="brief daily-only" id="dailyHead">Cargando el daily…</p>
     <div class="daily-only dbest" id="dailyBest" hidden></div>
-    <div class="daily-only dpast" id="dailyPast"><button id="dPastBtn" class="ghost sm">Jugar días anteriores</button> <select id="dPastSel" class="sm" hidden aria-label="Día anterior para practicar"></select> <a href="#" id="dToday" hidden>Volver al daily de hoy</a></div>
+    <div class="daily-only dpast" id="dailyPast"><button id="dPastBtn" class="ghost sm">Jugar días anteriores</button> <a href="#" id="dToday" hidden>Volver al daily de hoy</a></div>
     <p class="brief">Llevas desde las ocho sin café. Los jefes rondan el piso y cualquier pausa “no planificada” termina en una reunión de 45 minutos. Consigue tu café y vuelve a tu escritorio sin que nadie te pille.</p>
     <ul class="keys">
       <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverse</li>
@@ -338,15 +348,7 @@ body.editing #editor{display:grid}
   </header>
   <div id="eBanner" hidden><span id="eBannerText"></span><button id="eBannerBtn" class="sm">Abrir</button></div>
   <aside id="tools" aria-label="Herramientas"></aside>
-  <div id="dailyCal" hidden>
-    <div class="dcard">
-      <div class="dhead"><button id="dPrev" class="ghost sm" aria-label="Mes anterior">‹</button><b id="dMonth"></b><button id="dNext" class="ghost sm" aria-label="Mes siguiente">›</button><div class="grow"></div><button id="dClose" class="ghost sm">Cerrar</button></div>
-      <p class="dnote">Daily de la Etapa 3. Elige un día para programar el inicio, la cafetera con café y las rutas de los jefes. Los días sin programar usan uno de los programados al azar.</p>
-      <div id="dKeyRow" hidden><label class="f">Clave para programar<input id="dKey" type="password" autocomplete="off"></label><button id="dKeyOk" class="sm">Entrar</button></div>
-      <div class="dgrid" id="dGrid"></div>
-      <p class="dnote" id="dMsg"></p>
-    </div>
-  </div>
+
   <div id="eStage"><canvas id="ecan" aria-label="Plano del mapa"></canvas><div id="eHint"></div>
     <div class="zoom"><select id="eGrid" class="sm" aria-label="Ajuste de grilla" title="Ajuste al mover y dibujar"><option value="0.1">Grilla 0,1 m</option><option value="0.5">Grilla 0,5 m</option><option value="1">Grilla 1 m</option></select><button id="zIn" class="ghost sm" aria-label="Acercar">+</button><button id="zOut" class="ghost sm" aria-label="Alejar">−</button><button id="zFit" class="ghost sm">Centrar</button></div>
   </div>
@@ -1547,13 +1549,11 @@ async function dailyBest(){ const box=$('dailyBest'); if(!dailyOk()){ box.hidden
 function practiceUI(){ const on=menuPick==='practica'&&PRACT; $('dToday').hidden=!on; $('dailyBest').style.display=on?'none':'';
   if(on){ $('dailyHead').textContent='Práctica · '+fechaCorta(PRACT.fecha)+' (no entra al ranking)'; $('startBtn').textContent='Jugar práctica'; $('startBtn').disabled=!engine; }
   else { $('startBtn').textContent='Jugar el daily'; } }
-$('dPastBtn').addEventListener('click',async()=>{ const sel=$('dPastSel');
-  try{ const dias=await supa('rpc/daily_anteriores',{method:'POST',body:'{}'})||[]; if(!dias.length){ toast('Todavía no hay días anteriores.'); return; }
-    sel.textContent=''; const o0=document.createElement('option'); o0.value=''; o0.textContent='Elige un día…'; sel.appendChild(o0);
-    for(const d of dias){ const o=document.createElement('option'); o.value=d.fecha; o.textContent=fechaCorta(d.fecha); sel.appendChild(o); } sel.hidden=false; sel.focus(); }catch(e){ toast(netMsg(e)); } });
-$('dPastSel').addEventListener('change',async()=>{ const f=$('dPastSel').value; if(!f) return;
-  try{ const r=await fetchDaily(f); if(!r){ toast('Ese día no tiene daily.'); return; } PRACT={fecha:f,dd:r.dd}; menuPick='practica'; const m=mapById('practica'); if(m&&engine) engine.load(m.map,'practica',m.name); practiceUI(); }catch(e){ toast(netMsg(e)); } });
-$('dToday').addEventListener('click',e=>{ e.preventDefault(); PRACT=null; menuPick='daily'; $('dPastSel').value=''; practiceUI(); dailyMenu(); });
+$('dPastBtn').addEventListener('click',async()=>{
+  try{ const dias=await supa('rpc/daily_anteriores',{method:'POST',body:'{}'})||[]; if(!dias.length){ toast('Todavía no hay días anteriores.'); return; } openPlayCal(dias,pickPractice); }catch(e){ toast(netMsg(e)); } });
+async function pickPractice(f){
+  try{ const r=await fetchDaily(f); if(!r){ toast('Ese día no tiene daily.'); return; } PRACT={fecha:f,dd:r.dd}; menuPick='practica'; const m=mapById('practica'); if(m&&engine) engine.load(m.map,'practica',m.name); practiceUI(); }catch(e){ toast(netMsg(e)); } }
+$('dToday').addEventListener('click',e=>{ e.preventDefault(); PRACT=null; menuPick='daily'; practiceUI(); dailyMenu(); });
 function dailyMenu(){ if(menuPick==='practica'&&PRACT){ practiceUI(); return; } const ok=dailyOk(); $('startBtn').disabled=!ok||!engine; dailyBest(); practiceUI();
   $('dailyHead').textContent=ok?'Daily de hoy · '+new Date(DAILY.fecha+'T12:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'}):'Hoy no hay daily programado. Vuelve más tarde.';
   if(ok&&engine&&document.body.classList.contains('page-daily')&&!document.body.classList.contains('playing')){ menuPick='daily'; const m=mapById('daily'); engine.load(m.map,'daily',m.name); } }
@@ -1826,7 +1826,7 @@ $('eMap').addEventListener('change',()=>{ flushSave(); loadIntoEditor($('eMap').
 
 /* ---- gestor del daily (solo dev) ---- */
 let DKEY=''; try{ DKEY=localStorage.getItem('cafecito-daily-clave')||''; }catch(e){}
-const DCAL={y:0,m:0,list:new Map(),loaded:false};
+const DCAL={y:0,m:0,list:new Map(),loaded:false,mode:'edit',allowed:new Set(),onPick:null};
 const ymd=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 const hoyCL=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago'}).format(new Date());
 async function dailyRpc(fn,args){ try{ return await supa('rpc/'+fn,{method:'POST',body:JSON.stringify(Object.assign({p_clave:DKEY},args||{}))}); }
@@ -1840,9 +1840,16 @@ function renderCal(){ const g=$('dGrid'); g.textContent=''; const {y,m}=DCAL, fi
   for(const w of ['lu','ma','mi','ju','vi','sá','do']){ const d=document.createElement('div'); d.className='dw'; d.textContent=w; g.appendChild(d); }
   for(let i=0;i<off;i++) g.appendChild(document.createElement('div'));
   for(let d=1;d<=days;d++){ const f=ymd(y,m,d), b=document.createElement('button'); b.textContent=String(d);
+    if(DCAL.mode==='play'){ const ok=DCAL.allowed.has(f); if(ok) b.classList.add('on'); if(f===hoy) b.classList.add('today'); if(f<hoy) b.classList.add('past');
+      b.title=ok?'Jugar este día':f>=hoy?'Todavía no':'Sin daily'; b.disabled=!ok; b.addEventListener('click',()=>{ $('dailyCal').hidden=true; if(DCAL.onPick) DCAL.onPick(f); }); g.appendChild(b); continue; }
     if(DCAL.list.has(f)) b.classList.add('on'); if(f===hoy) b.classList.add('today'); if(f<hoy) b.classList.add('past');
     b.title=DCAL.list.has(f)?'Programado':'Sin programar'; b.disabled=!DCAL.loaded; b.addEventListener('click',()=>enterDaily(f)); g.appendChild(b); } }
-function openDailyCal(){ $('dClose').hidden=!E.daily;
+// el mismo calendario, para elegir un día anterior y jugarlo como práctica
+function openPlayCal(dias,onPick){ DCAL.mode='play'; DCAL.allowed=new Set(dias.map(d=>d.fecha)); DCAL.onPick=onPick;
+  const [y,m]=(dias[0]?dias[0].fecha:hoyCL()).split('-').map(Number); DCAL.y=y; DCAL.m=m-1;
+  $('dNote').textContent='Elige un día anterior para jugarlo como práctica. Los días en verde tienen daily; la marca se guarda pero no entra al ranking.';
+  $('dKeyRow').hidden=true; $('dClose').hidden=false; $('dMsg').textContent=dias.length+(dias.length===1?' día disponible.':' días disponibles.'); $('dailyCal').hidden=false; renderCal(); }
+function openDailyCal(){ DCAL.mode='edit'; $('dNote').textContent='Daily de la Etapa 3. Elige un día para programar el plano, el inicio, la cafetera con café y las rutas de los jefes. Los días sin programar usan uno de los programados al azar.'; $('dClose').hidden=!E.daily;
   const [y,m]=hoyCL().split('-').map(Number); if(!DCAL.y){ DCAL.y=y; DCAL.m=m-1; } $('dailyCal').hidden=false; $('dKey').value=''; renderCal(); dailyLoadList(); }
 $('eDailyBtn').addEventListener('click',openDailyCal);
 $('dClose').addEventListener('click',()=>{ $('dailyCal').hidden=true; });
