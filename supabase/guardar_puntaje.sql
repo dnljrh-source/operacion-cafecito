@@ -52,6 +52,11 @@ begin
   if pa.inicio < now() - interval '1 hour' then return json_build_object('ok', false, 'error', 'La partida expiró'); end if;
   if char_length(v_nombre) < 1 or char_length(v_nombre) > 20 then return json_build_object('ok', false, 'error', 'Escribe un nombre de 1 a 20 letras'); end if;
   if public.nombre_bloqueado(v_nombre) then return json_build_object('ok', false, 'error', 'Ese nombre no está permitido. Prueba con otro.'); end if;
+  -- 10 segundos entre una marca y la siguiente del mismo nombre (no consume la partida: puede reintentar)
+  if (pa.entorno = 'prod' and exists (select 1 from public.puntajes where lower(trim(nombre)) = lower(v_nombre) and creado > now() - interval '10 seconds'))
+     or (pa.entorno = 'dev' and exists (select 1 from public.puntajes_dev where lower(trim(nombre)) = lower(v_nombre) and creado > now() - interval '10 seconds')) then
+    return json_build_object('ok', false, 'error', 'Espera unos segundos antes de guardar otra marca.', 'reintentar', true);
+  end if;
 
   d := pa.doc; o := d->'obj'; desk := d->'start'; mq := o->'machines'->pa.cafetera;  -- el escritorio es el punto de inicio
   cap := case when jsonb_typeof(o->'capsule') = 'object' then o->'capsule' else null end;

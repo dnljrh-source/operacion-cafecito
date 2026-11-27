@@ -1708,6 +1708,7 @@ $('wSave').addEventListener('click',async()=>{
     if(!r.id){ lastRun.saved=true; $('wMsg').textContent=r.err||'Esta partida no quedó registrada, así que no se puede guardar.'; saving=false; return; }
     const res=await supa('rpc/guardar_puntaje',{method:'POST',body:JSON.stringify({p_partida:r.id,p_nombre:n,p_tiempo:lastRun.t,p_visto:lastRun.s,p_estrellas:lastRun.st,p_ruta:lastRun.ruta})});
     if(!res||res.ok!==true){ const msg=(res&&res.error)||'El ranking rechazó el puntaje.';
+      if(res&&res.reintentar){ const lr=lastRun; $('wMsg').textContent='Guardaste otra marca hace poco: se guarda sola en unos segundos…'; saving=false; setTimeout(()=>{ if(lastRun===lr&&!lr.saved){ $('wSave').disabled=false; $('wSave').click(); } },10500); return; }
       $('wMsg').textContent=msg; if(/nombre/i.test(msg)){ $('wNameRow').hidden=false; $('wSave').hidden=false; $('wSave').disabled=false; $('wName').select(); $('wName').focus(); } else lastRun.saved=true; saving=false; return; }
     lastRun.saved=true;
     if(String(lastRun.m).startsWith(PRACT_PFX)){ $('wMsg').textContent='Práctica guardada. Las prácticas no entran al ranking.'; saving=false; return; }
