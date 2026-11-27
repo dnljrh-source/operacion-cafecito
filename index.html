@@ -1866,7 +1866,7 @@ let cw=0, ch=0;
     if(e.key==='Enter'){ const first=[...box.querySelectorAll('.tool')].find(b=>!b.hidden); if(first){ first.click(); q.blur(); } } });
   q.addEventListener('input',()=>{ const v=norm(q.value.trim()); let curH=null, any=false;
     for(const el of box.children){ if(el===q) continue; if(el.tagName==='H3'){ if(curH) curH.hidden=!any; curH=el; any=false; continue; }
-      const ok=!v||norm(el.textContent).includes(v)||norm(el.dataset.grp||'').includes(v); el.hidden=!ok; if(ok) any=true; }
+      const ok=!v||norm(el.textContent).includes(v); el.hidden=!ok; if(ok) any=true; }
     if(curH) curH.hidden=!any; });
   for(const t of TOOLS){ if(t.g!==g){ g=t.g; const h=document.createElement('h3'); h.textContent=g; box.appendChild(h); }
     const b=document.createElement('button'); b.className='tool'; b.dataset.grp=t.g; b.dataset.tool=t.id; const i=document.createElement('i'); i.style.background=t.c; b.append(i,document.createTextNode(t.label));
