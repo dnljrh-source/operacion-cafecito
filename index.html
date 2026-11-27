@@ -103,6 +103,14 @@ label.f{display:grid;gap:4px;font-size:14px;color:var(--muted)}
 .rtable tr.me td{color:var(--accent);font-weight:600}
 .rscroll{overflow-x:auto;margin:0 0 14px}
 .routeBox{margin:0 0 14px}
+.shame{margin:4px 0 14px;padding:12px 14px;border-radius:12px;background:rgba(139,90,43,.16);border:1px dashed rgba(196,140,80,.55)}
+.shame h3{margin:0 0 2px;font-size:17px}
+.shame .note{margin:0 0 8px}
+.shame ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.shame li{display:flex;gap:10px;align-items:baseline;font-size:14px}
+.shame li .poo{font-size:22px;line-height:1}
+.shame li b{color:#fff}
+.shame li small{color:var(--muted)}
 .daily-only{display:none}
 body.page-daily .fdbox{display:none}
 body.page-daily.finde .fdbox{display:block;margin:14px 0 16px;padding:18px 16px;border-radius:14px;background:linear-gradient(135deg,rgba(95,211,195,.18),rgba(95,211,195,.04));border:1px solid rgba(95,211,195,.45);text-align:center}
@@ -333,6 +341,7 @@ body.editing #editor{display:grid}
     <div class="rscroll"><table class="rtable"><thead><tr><th class="n">#</th><th>Nombre</th><th class="n">Tiempo</th><th class="n">Visto</th><th>Nota</th><th>Fecha</th></tr></thead><tbody id="rBody"></tbody></table></div>
     <div class="routeBox" id="rRouteBox" hidden><canvas id="rRoute" aria-label="Plano con el recorrido"></canvas><div class="routeCap" id="rRouteCap"></div></div>
     <p id="rMsg" role="status" style="margin:0 0 14px"></p>
+    <div class="shame" id="shameBox" hidden><h3>💩 Muro de la vergüenza</h3><p class="note">Marcas borradas por hacer trampa.</p><ul id="shameList"></ul></div>
     <div class="row"><button id="rRefresh" class="sm">Actualizar</button><button id="rBack" class="ghost sm">Volver</button></div>
   </div>
 </div>
@@ -1744,7 +1753,13 @@ $('wSave').addEventListener('click',async()=>{
   saving=false;
 });
 const RK={past:false,mapa:'',fecha:'',dias:[]};
+async function loadShame(){ const box=$('shameBox'), ul=$('shameList');
+  try{ const rows=await supa('tramposos?select=nombre,mapa,tiempo,motivo,creado&order=creado.desc&limit=30')||[]; ul.textContent=''; box.hidden=!rows.length;
+    for(const r of rows){ const li=document.createElement('li'), poo=document.createElement('span'), t=document.createElement('div'), b=document.createElement('b'), sm=document.createElement('small');
+      poo.className='poo'; poo.textContent='💩'; b.textContent=String(r.nombre); const donde=String(r.mapa).startsWith(DAILY_PFX)?'Daily del '+new Date(r.mapa.slice(DAILY_PFX.length)+'T12:00').toLocaleDateString('es-CL',{day:'numeric',month:'short'}):String(r.mapa);
+      sm.textContent=' · '+donde+(r.tiempo!=null?' · '+fmt2(Number(r.tiempo)):'')+' — '+String(r.motivo); t.append(b,sm); li.append(poo,t); ul.appendChild(li); } }catch(e){ box.hidden=true; } }
 async function loadRank(){
+  loadShame();
   const m=PAGE==='daily'?RK.mapa:$('rMap').value; if(!m){ $('rBody').textContent=''; $('rMsg').textContent='Hoy no hay daily programado.'; return; } $('rMsg').textContent='Cargando…'; $('rBody').textContent='';
   try{ const list=await bestList(m); fillRows($('rBody'),list.slice(0,10),myName?{n:myName,t:-1}:null,true,r=>showRemoteRoute(r,m,'r')); $('rRouteBox').hidden=true;
     if(myName){ const pos=list.findIndex(r=>String(r.nombre).trim().toLowerCase()===myName.toLowerCase())+1; [...$('rBody').children].forEach((tr,i)=>{ if(i===pos-1) tr.classList.add('me'); }); }
