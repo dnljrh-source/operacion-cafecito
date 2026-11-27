@@ -737,7 +737,7 @@ function dailyMapFrom(dd){ if(!dd||!dd.config) return null; const c=dd.config; l
   if(c.map&&typeof c.map==='object') m=clone(c.map); else { if(!BUILTIN[dd.base]) return null; m=clone(BUILTIN[dd.base]); m.start=Object.assign({},m.start,c.start||{}); if(Array.isArray(c.bosses)) m.bosses=c.bosses; }
   const out=sanitizeMap(m); out.name=DAILY_PFX+dd.fecha; return out; }
 const dailyOk=()=>!!(DAILY&&dailyMapFrom(DAILY.dd));
-function mapById(id){ if(id==='daily'){ const m=DAILY&&dailyMapFrom(DAILY.dd); return m?{name:m.name,map:m,readonly:true}:null; } if(isBuiltin(id)) return {name:BUILTIN[id].name,map:BUILTIN[id],readonly:true}; const d=Store.docs.get(id); return d?{name:d.name,map:d.map,doc:d}:null; }
+function mapById(id){ if(id==='daily'){ const m=DAILY&&dailyMapFrom(DAILY.dd), c=DAILY&&DAILY.dd.config; return m?{name:m.name,map:m,readonly:true,cafetera:c&&!c.alias&&Number.isInteger(Number(c.cafetera))?Number(c.cafetera):undefined}:null; } if(isBuiltin(id)) return {name:BUILTIN[id].name,map:BUILTIN[id],readonly:true}; const d=Store.docs.get(id); return d?{name:d.name,map:d.map,doc:d}:null; }
 
 /* ================= modal ================= */
 let modalCb=null;
@@ -1254,13 +1254,13 @@ function createEngine(){
   function resetLevel(){
     const st=LV.start;
     Object.assign(P,{x:st.x,z:st.z,yaw:-st.r*D2R,pitch:-0.12,eye:STAND_EYE,crouch:false,running:false,moving:false,noisy:false,capsule:false,coffee:false,brew:0,brewing:false,bob:0,warned:false});
-    const nm=LV.obj.machines.length; working=nm>1?Math.floor(Math.random()*nm):0; found=nm>1?-1:0; checked=new Set();
+    const nm=LV.obj.machines.length; working=(current.cafetera!=null&&current.cafetera>=0&&current.cafetera<nm)?current.cafetera:nm>1?Math.floor(Math.random()*nm):0; // daily: la cafetera programada desde el primer momento found=nm>1?-1:0; checked=new Set();
     for(const b of bosses){ const w=b.path[0]; Object.assign(b,{x:w.x,z:w.z,i:0,dir:1,state:'walk',t:0,ph:0,susp:0,lost:9,seeing:false,cd:0,yaw:w.yaw,route:null,goal:null,needReturn:false,hurry:1}); }
     for(const d of doors){ d.open=false; d.ang=d.target=0; d.hold=0; if(d.piv) d.piv.rotation.y=0; if(d.pivs) for(const q of d.pivs) q.p.rotation.y=0; if(d.solid){ d.solid.off=false; d.solid.blocks=!d.glass; } } alarm=null;
     Object.assign(game,{time:0,catcher:null,overlay:false,spotted:0,maxS:0,seen:false});
   }
   function start(map,key,opts){
-    opts=opts||{}; audioOn(); load(map,key,opts.name); current.fromEditor=!!opts.fromEditor; current.onExit=opts.onExit||null;
+    opts=opts||{}; current.cafetera=Number.isInteger(opts.cafetera)?opts.cafetera:null; audioOn(); load(map,key,opts.name); current.fromEditor=!!opts.fromEditor; current.onExit=opts.onExit||null;
     document.querySelectorAll('.toEditor').forEach(b=>b.hidden=!current.fromEditor);
     $('mapTitle').textContent=current.name||'Objetivos';
     if(((typeof ENV!=='undefined'&&ENV==='dev')||PAGE==='gestor')&&!ghostInit){ ghostInit=true; setGhost(true); } ghostUsed=ghost;
@@ -1271,7 +1271,7 @@ function createEngine(){
     const hint=LV.obj.capsule?'Primero, la cápsula. Sigue el rombo amarillo.':LV.obj.machines.length>1?'Hoy solo una cafetera tiene café. Revisa las marcadas con rombo.':'Ve a la cafetera. Sigue el rombo amarillo.';
     setTimeout(()=>{ if(game.state==='play') toast(hint,3.2); },400);
   }
-  function restart(){ start(JSON.parse(levelJSON),current.key,{name:current.name,fromEditor:current.fromEditor,onExit:current.onExit}); }
+  function restart(){ start(JSON.parse(levelJSON),current.key,{name:current.name,fromEditor:current.fromEditor,onExit:current.onExit,cafetera:current.cafetera??undefined}); }
   function pause(){ if(game.state!=='play') return; game.state='pause'; clearKeys(); dragging=false; releaseLock(); showScreen('pause'); document.body.classList.remove('drag'); }
   function resume(){ if(game.state!=='pause') return; audioOn(); game.state='play'; showScreen(null); setDrag(dragMode); requestLock(); }
   function caught(b){ if(game.state!=='play') return; game.state='caught'; game.catcher=b; b.susp=1; clearKeys(); sfx.caught(); releaseLock(); document.body.classList.remove('drag','crouch');
@@ -1503,7 +1503,7 @@ function showMenu(){
   showScreen('menu'); if(PAGE==='daily'&&rankingOn&&typeof loadDaily==='function'&&(!DAILY||DAILY.fecha!==hoyCLg())){ delete dailyCache.hoy; loadDaily(); }
 }
 $('mapPick').addEventListener('change',()=>{ menuPick=$('mapPick').value; const m=mapById(menuPick); if(m&&engine) engine.load(m.map,menuPick,m.name); });
-$('startBtn').addEventListener('click',()=>{ if(!engine) return; if(rankingOn&&!myName){ askName(()=>$('startBtn').click()); return; } const m=mapById(menuPick)||mapById('original'); engine.start(m.map,menuPick,{name:m.name,onExit:w=>{ if(w==='editor') openEditor(menuPick); else showMenu(); }}); });
+$('startBtn').addEventListener('click',()=>{ if(!engine) return; if(rankingOn&&!myName){ askName(()=>$('startBtn').click()); return; } const m=mapById(menuPick)||mapById('original'); engine.start(m.map,menuPick,{name:m.name,cafetera:m.cafetera,onExit:w=>{ if(w==='editor') openEditor(menuPick); else showMenu(); }}); });
 if(!engine) $('startBtn').disabled=true;
 $('editBtn').addEventListener('click',()=>{ try{ history.replaceState(null,'','#editor'); }catch(e){} openEditor(menuPick); });
 window.addEventListener('hashchange',()=>{ if(location.hash==='#editor'){ if(!document.body.classList.contains('editing')) openEditor(menuPick); } else if(document.body.classList.contains('editing')) closeEditor(); });
@@ -1922,7 +1922,7 @@ $('eImport').addEventListener('click',()=>{ modal('Importar mapa','Pega aquí el
   loadIntoEditor(id); toast(by==='claude'?'Versión afinada importada.':'Mapa importado.'); return null; }); });
 $('ePlay').addEventListener('click',()=>{ if(!engine) return; flushSave(); const id=E.id, name=E.meta.name;
   document.body.classList.remove('editing'); engine.suspend(false);
-  engine.start(clone(E.map),id,{name,fromEditor:true,onExit:w=>{ if(w==='editor') openEditor(E.id); else { try{ history.replaceState(null,'','#'); }catch(e){} showMenu(); } }}); });
+  engine.start(clone(E.map),id,{name,fromEditor:true,cafetera:E.daily?E.daily.cafetera:undefined,onExit:w=>{ if(w==='editor') openEditor(E.id); else { try{ history.replaceState(null,'','#'); }catch(e){} showMenu(); } }}); });
 
 /* vista */
 function resizeCanvas(){ const r=$('eStage').getBoundingClientRect(); cw=Math.max(1,r.width); ch=Math.max(1,r.height); const dpr=Math.min(2,window.devicePixelRatio||1);
