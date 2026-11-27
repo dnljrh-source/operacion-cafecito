@@ -2323,6 +2323,7 @@ function paint(){
     c.fillRect(x,y,Math.max(1.5,w),Math.max(1.5,h)); if(so.h>=1.8&&so.c!=='glass'){ c.strokeStyle='#6b7686'; c.lineWidth=1; c.strokeRect(x+.5,y+.5,Math.max(1,w-1),Math.max(1,h-1)); } }
   // props sin bloque: letreros, teles, sillas, escritorios
   for(const p of L.props){
+    if(p.k==='pelota'){ const [x,y]=toS(p.x,p.z), r=Math.max(4,0.17*s); c.fillStyle='#7ccff5'; c.strokeStyle='#ffffff'; c.lineWidth=1.5; c.beginPath(); c.arc(x,y,r,0,TAU); c.fill(); c.stroke(); }
     if(p.k==='chair'){ const [x,y]=toS(p.x,p.z); c.fillStyle='rgba(30,34,41,.7)'; c.fillRect(x-0.22*s,y-0.22*s,0.44*s,0.44*s); }
     if(p.k==='desk'&&p.mine){ const [x,y]=toS(p.x,p.z); c.strokeStyle='#5fd3c3'; c.lineWidth=2; c.strokeRect(x-0.5*s,y-0.5*s,s,s); }
     if(p.k==='letrero'||p.k==='tele'){ const [x,y]=toS(p.x,p.z); c.save(); c.translate(x,y); c.rotate(p.r*D2R); c.fillStyle=p.k==='tele'?'#5aa7d8':'#ffffff'; c.fillRect(-0.7*s,-0.06*s-2,1.4*s,0.12*s+4);
