@@ -816,6 +816,18 @@ function createEngine(){
   let FLAME_TX=null; function flameTex(){ if(FLAME_TX) return FLAME_TX; const c=document.createElement('canvas'); c.width=64; c.height=128; const q=c.getContext('2d');
     const g=q.createRadialGradient(32,92,2,32,80,44); g.addColorStop(0,'rgba(255,255,230,1)'); g.addColorStop(0.35,'rgba(255,200,80,.95)'); g.addColorStop(0.7,'rgba(255,100,20,.55)'); g.addColorStop(1,'rgba(255,60,0,0)');
     q.fillStyle=g; q.beginPath(); q.moveTo(32,4); q.bezierCurveTo(52,40,62,70,58,96); q.bezierCurveTo(54,120,10,120,6,96); q.bezierCurveTo(2,70,12,40,32,4); q.fill(); FLAME_TX=new THREE.CanvasTexture(c); return FLAME_TX; }
+  let BALL_TX=null; function ballTex(){ if(BALL_TX) return BALL_TX; // pelota menta con costuras de paneles y parches azules a rayas punteadas
+    BALL_TX=canvasTex(1024,512,(q,W,H)=>{ q.fillStyle='#bfe2da'; q.fillRect(0,0,W,H);
+      q.fillStyle='rgba(255,255,255,.28)'; for(let y=3;y<H;y+=7) for(let x=(y/7%2)*3.5;x<W;x+=7){ q.beginPath(); q.arc(x,y,1.3,0,7); q.fill(); }
+      const R=46, hx=R*Math.sqrt(3), seam=(x,y)=>{ q.beginPath(); for(let k=0;k<6;k++){ const a=Math.PI/6+k*Math.PI/3; q.lineTo(x+R*Math.cos(a),y+R*Math.sin(a)); } q.closePath(); q.stroke(); };
+      q.strokeStyle='#e4f5f1'; q.lineWidth=4; for(let r=0,y=0;y<H+R;r++,y+=R*1.5) for(let x=(r%2)*hx/2;x<W+hx;x+=hx) seam(x,y);
+      q.strokeStyle='rgba(120,170,160,.35)'; q.lineWidth=1; for(let r=0,y=0;y<H+R;r++,y+=R*1.5) for(let x=(r%2)*hx/2;x<W+hx;x+=hx) seam(x+1.5,y+1.5);
+      const parche=(cx,cy,sc)=>{ q.save(); q.beginPath(); q.ellipse(cx,cy,95*sc,70*sc,-0.15,0,7); q.clip();
+        for(let i=-8;i<9;i++){ const y=cy+i*11*sc; for(let x=cx-110*sc;x<cx+110*sc;x+=4){ const f=(x-(cx-110*sc))/(220*sc); if(Math.random()>f*1.6) continue; // borde izquierdo deshilachado
+          q.fillStyle=Math.random()<0.75?'#2c87cf':'#5aa9e0'; q.fillRect(x,y-(f>0.45?3.5:1.5),3.2,f>0.45?7:3); } }
+        q.restore(); };
+      [[120,140,1],[420,330,1.1],[690,120,0.95],[900,360,1],[260,430,0.8],[560,40,0.7],[60,330,0.8],[1000,110,0.7]].forEach(a=>parche(...a));
+    },1,1); return BALL_TX; }
   let SMOKE_TX=null; function smokeTex(){ if(SMOKE_TX) return SMOKE_TX; const c=document.createElement('canvas'); c.width=c.height=64; const q=c.getContext('2d'), g=q.createRadialGradient(32,32,2,32,32,30); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(1,'rgba(255,255,255,0)'); q.fillStyle=g; q.fillRect(0,0,64,64); SMOKE_TX=new THREE.CanvasTexture(c); return SMOKE_TX; }
   let root=null;
   function mk(geo,mat,w,h,d,x,y,z,parent,ns){ const m=new THREE.Mesh(geo,mat); m.scale.set(w,h,d); m.position.set(x,y,z); m.castShadow=!ns; m.receiveShadow=true; (parent||root).add(m); return m; }
@@ -1113,8 +1125,8 @@ function createEngine(){
         cyl(0x7d8590,0.06,0.42,0.06,0,0.24,0,g); box(0x50565f,0.5,0.04,0.08,0,0.03,0,g); box(0x50565f,0.08,0.04,0.5,0,0.03,0,g); break; }
       case 'persona': { buildProp({k:'chair',x:p.x,z:p.z,yaw:p.yaw},L); const w=person({skin:0xe7b994,top:0xa8456a,pants:0x2f3340,hairC:0x3b2418,hair:'long',shirt:0xf3ece6});
         w.g.position.set(p.x,0.5-0.9*0.92,p.z); w.inner.scale.setScalar(0.92); w.g.rotation.y=p.yaw; w.legL.rotation.x=w.legR.rotation.x=-Math.PI/2; w.armL.rotation.x=w.armR.rotation.x=-1.1; workers.push(w); break; }
-      case 'pelota': { const BR=0.17, m=new THREE.Mesh(SPHERE,M(0x7ccff5)); m.scale.setScalar(BR); m.castShadow=true; m.receiveShadow=true; root.add(m);
-        const band=new THREE.Mesh(new THREE.TorusGeometry(1,0.06,6,24),own(new THREE.MeshBasicMaterial({color:0xffffff}))); band.rotation.x=Math.PI/2; m.add(band);
+      case 'pelota': { const BR=0.17, mat=own(new THREE.MeshToonMaterial({map:ballTex(),gradientMap:grad})); mat.userData.keepMap=true;
+        const m=new THREE.Mesh(new THREE.SphereGeometry(1,28,20),mat); m.scale.setScalar(BR); m.castShadow=true; m.receiveShadow=true; root.add(m);
         balls.push({m,x0:p.x,z0:p.z,x:p.x,y:BR,z:p.z,vx:0,vy:0,vz:0,R:BR,held:false,cd:0}); m.position.set(p.x,BR,p.z); break; }
       case 'npc': { const i=p.seed||0, TONO={rubio:[0xf3cfae,0xd9b25a],moreno:[0xc68e62,0x3b2a20],negro:[0x6b4630,0x161414]}[p.tono], muj=p.sexo==='m', hom=p.sexo==='h';
         const aseo=p.rol==='aseo', w=person(aseo?{skin:[0xf1c9a5,0xc68e62,0x8d5a3b][i%3],top:0x2f6fb8,pants:0x24569a,shirt:0x2f6fb8,hairC:[0x3b2a20,0x1c1b1f,0x8a5a2b][i%3],hair:'bun'}:{skin:TONO?TONO[0]:[0xf1c9a5,0xd9a37e,0xb07c57,0x8d5a3b][i%4],top:[0x4a90b8,0xc0504d,0x6aa86d,0xe2b93b,0x8e6ac8,0x2f6f73][i%6],pants:[0x3d4452,0x2a2f3a,0x6b5a45][i%3],
@@ -2336,7 +2348,7 @@ function paint(){
     c.fillRect(x,y,Math.max(1.5,w),Math.max(1.5,h)); if(so.h>=1.8&&so.c!=='glass'){ c.strokeStyle='#6b7686'; c.lineWidth=1; c.strokeRect(x+.5,y+.5,Math.max(1,w-1),Math.max(1,h-1)); } }
   // props sin bloque: letreros, teles, sillas, escritorios
   for(const p of L.props){
-    if(p.k==='pelota'){ const [x,y]=toS(p.x,p.z), r=Math.max(4,0.17*s); c.fillStyle='#7ccff5'; c.strokeStyle='#ffffff'; c.lineWidth=1.5; c.beginPath(); c.arc(x,y,r,0,TAU); c.fill(); c.stroke(); }
+    if(p.k==='pelota'){ const [x,y]=toS(p.x,p.z), r=Math.max(4,0.17*s); c.fillStyle='#bfe2da'; c.strokeStyle='#2c87cf'; c.lineWidth=1.5; c.beginPath(); c.arc(x,y,r,0,TAU); c.fill(); c.stroke(); }
     if(p.k==='chair'){ const [x,y]=toS(p.x,p.z); c.fillStyle='rgba(30,34,41,.7)'; c.fillRect(x-0.22*s,y-0.22*s,0.44*s,0.44*s); }
     if(p.k==='desk'&&p.mine){ const [x,y]=toS(p.x,p.z); c.strokeStyle='#5fd3c3'; c.lineWidth=2; c.strokeRect(x-0.5*s,y-0.5*s,s,s); }
     if(p.k==='letrero'||p.k==='tele'){ const [x,y]=toS(p.x,p.z); c.save(); c.translate(x,y); c.rotate(p.r*D2R); c.fillStyle=p.k==='tele'?'#5aa7d8':'#ffffff'; c.fillRect(-0.7*s,-0.06*s-2,1.4*s,0.12*s+4);
