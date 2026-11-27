@@ -1482,7 +1482,7 @@ function createEngine(){
   const api={load,start,state:()=>game.state,
     setWorking(seq,i){ if(seq===run.seq&&game.state==='play'&&LV&&found<0&&Number.isInteger(i)&&i>=0&&i<LV.obj.machines.length) working=i; },suspend(v){ suspended=v; if(v){ releaseLock(); clearKeys(); } else last=performance.now(); },
     toMenu(){ game.state='menu'; releaseLock(); document.body.classList.remove('playing','drag','crouch'); },
-    debug:{screen:screenCanvas,P,game,get bosses(){return bosses;},get solids(){return solids;},canSee}};
+    debug:{screen:screenCanvas,P,game,get bosses(){return bosses;},get solids(){return solids;},canSee,get working(){return working;}}};
   return api;
 }
 
