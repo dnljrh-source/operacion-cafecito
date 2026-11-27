@@ -1609,7 +1609,7 @@ window.addEventListener('hashchange',()=>{ if(location.hash==='#editor'){ if(!do
 const PROD_HOSTS=['operacion-cafecito.pages.dev','dnljrh-source.github.io'];
 const ENV=PROD_HOSTS.includes(location.hostname)?'prod':'dev';
 const SUPA={url:'https://mczzzznhddyevvfydloh.supabase.co',key:'sb_publishable_vDIwcp-c0JRwkVa772J5RQ_k5h0_YVZ',table:ENV==='prod'?'puntajes':'puntajes_dev'};
-if(ENV==='dev'||PAGE==='gestor') setTimeout(cloudLoad,0); // el gestor lee la última versión de las etapas (sin guardarlas)
+setTimeout(cloudLoad,0); // cada ambiente lee sus etapas editadas: dev → mapas_dev, prod → mapas_prod
 if(ENV==='dev'){ document.title='[DEV] '+document.title; const b=document.createElement('div'); b.id='envBadge'; b.textContent='DEV · ambiente de pruebas'; document.body.appendChild(b);
 }
 if(ENV==='dev'||PAGE==='gestor'){ const g=document.createElement('div'); g.id='ghostBadge'; g.hidden=true; g.textContent='👻 Modo fantasma · G para quitarlo'; document.body.appendChild(g); }
@@ -1640,22 +1640,23 @@ const esFinde=()=>{ const d=new Date(hoyCLg()+'T12:00').getDay(); return d===0||
 function dailyMenu(){ if(menuPick==='practica'&&PRACT){ practiceUI(); return; } const ok=dailyOk(); document.body.classList.toggle('finde',!ok&&esFinde()); $('startBtn').disabled=!ok||!engine; dailyBest(); practiceUI();
   $('dailyHead').textContent=ok?'Daily de hoy · '+new Date(DAILY.fecha+'T12:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'}):esFinde()?'Hoy no hay daily':'Hoy no hay daily programado. Vuelve más tarde.';
   if(ok&&engine&&document.body.classList.contains('page-daily')&&!document.body.classList.contains('playing')){ menuPick='daily'; const m=mapById('daily'); engine.load(m.map,'daily',m.name); } }
-/* DEV: las etapas oficiales se editan directo y se guardan en la nube (tabla mapas_dev). Prod no lee esta tabla. */
+/* Etapas oficiales editadas en la nube, separadas por ambiente: dev → mapas_dev (libre), prod → mapas_prod (solo con la clave del gestor). */
+const MAPAS_TABLA=()=>ENV==='prod'?'mapas_prod':'mapas_dev';
 const BUILTIN_NAME=Object.fromEntries(Object.entries(BUILTIN).map(([k,m])=>[k,m.name]));
-function cloudEdit(){ return typeof ENV!=='undefined'&&ENV==='dev'; }
+function cloudEdit(){ if(typeof ENV==='undefined') return false; if(ENV==='dev') return true; try{ return !!(DKEY||localStorage.getItem('cafecito-daily-clave')); }catch(e){ return false; } }
 let cloudBusy=false, cloudNext=null;
 async function cloudSave(id,map){
   map.name=BUILTIN_NAME[id]; map.obj.desk={x:map.start.x,z:map.start.z,r:map.start.r}; BUILTIN[id]=map; cloudNext={id,map};
   const say=t=>{ E.cloudState=t; if(E.id===id&&document.body.classList.contains('editing')) $('eSave').textContent=t; };
   if(cloudBusy) return; cloudBusy=true;
   while(cloudNext){ const job=cloudNext; cloudNext=null; say('Guardando en la nube…');
-    try{ await supa('mapas_dev?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({id:job.id,doc:job.map})});
+    try{ if(ENV==='prod') await dailyRpc('guardar_mapa_prod',{p_id:job.id,p_doc:job.map});
+      else await supa('mapas_dev?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({id:job.id,doc:job.map})});
       try{ localStorage.removeItem('cafecito-dev-pend-'+job.id); }catch(e){} say('Guardado en la nube'); }
     catch(e){ console.error(e); try{ localStorage.setItem('cafecito-dev-pend-'+job.id,JSON.stringify(job.map)); }catch(err){} say('Sin conexión: quedó en este navegador y se sube al volver'); } }
   cloudBusy=false; }
 async function cloudLoad(){
-  if(!cloudEdit()&&PAGE!=='gestor') return;
-  let rows=[]; try{ rows=await supa('mapas_dev?select=id,doc,actualizado')||[]; }catch(e){ console.error(e); }
+  let rows=[]; try{ rows=await supa(MAPAS_TABLA()+'?select=id,doc,actualizado')||[]; }catch(e){ console.error(e); }
   for(const r of rows){ if(!isBuiltin(r.id)) continue; try{ const m=sanitizeMap(r.doc); m.name=BUILTIN_NAME[r.id]; BUILTIN[r.id]=m; }catch(e){ console.error(e); } }
   // cambios que no alcanzaron a subir
   for(const id of Object.keys(BUILTIN)){ let pend=null; try{ pend=JSON.parse(localStorage.getItem('cafecito-dev-pend-'+id)||'null'); }catch(e){}
@@ -1905,12 +1906,12 @@ function refreshEditorUI(){
   fillMapSelect($('eMap'),E.id,true);
   $('eName').value=E.meta.name; $('eName').disabled=isBuiltin(E.id);
   const st=$('eStatus'); st.className='badge'+(E.meta.status==='afinado'?' afinado':E.meta.status==='para-afinar'?' para':'');
-  st.textContent=isBuiltin(E.id)?(cloudEdit()?'Oficial · dev':'Original'):E.meta.status==='afinado'?'Afinado por Claude':E.meta.status==='para-afinar'?'Para afinar':'Borrador';
+  st.textContent=isBuiltin(E.id)?(cloudEdit()?(ENV==='prod'?'Oficial · prod':'Oficial · dev'):'Original'):E.meta.status==='afinado'?'Afinado por Claude':E.meta.status==='para-afinar'?'Para afinar':'Borrador';
   $('eNotes').value=E.meta.notas||''; $('claudeNote').hidden=!E.meta.notaClaude; $('claudeNoteText').textContent=E.meta.notaClaude||'';
   $('eW').value=E.map.size.w; $('eD').value=E.map.size.d;
   $('ePlay').disabled=!engine; if(!engine) $('ePlay').title='El juego 3D no está disponible en este navegador';
   $('eUndo').disabled=!E.undo.length; $('eRedo').disabled=!E.redo.length;
-  if(isBuiltin(E.id)) $('eSave').textContent=cloudEdit()?(E.cloudState||'Etapa oficial de dev · se guarda en la nube'):'Al editar se crea tu copia';
+  if(isBuiltin(E.id)) $('eSave').textContent=cloudEdit()?(E.cloudState||'Etapa oficial de '+ENV+' · se guarda en la nube'):'Al editar se crea tu copia';
   $('eDailyBtn').hidden=PAGE!=='gestor'; $('eDailyBtn').textContent='Calendario'; $('eDailyCtl').hidden=!E.daily; $('eDailyOut').hidden=PAGE==='gestor';
   if(E.daily){ $('eName').value=DAILY_PFX+E.daily.fecha; $('eName').disabled=true; st.className='badge afinado'; st.textContent='Daily';
     const sel=$('eDailyCaf'); sel.textContent=''; E.map.obj.machines.forEach((q,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=String(i+1); sel.appendChild(o); }); sel.value=String(E.daily.cafetera);
@@ -1986,7 +1987,7 @@ function renderWarns(){
 
 /* cambios, deshacer y guardado */
 function snapshot(){
-  if(isBuiltin(E.id)&&cloudEdit()&&!E.cloudToast){ E.cloudToast=true; toast('Estás editando la etapa oficial de dev: los cambios se guardan en la nube.',3.2); }
+  if(isBuiltin(E.id)&&cloudEdit()&&!E.cloudToast){ E.cloudToast=true; toast('Estás editando la etapa oficial de '+ENV+': los cambios se guardan en la nube de '+ENV+'.',3.2); }
   if(isBuiltin(E.id)&&!cloudEdit()){ // primera edición: crear copia
     const base=BUILTIN[E.id].name.split(' · ')[0].toLowerCase(); E.id=newId(); E.meta={name:'Mi versión de la '+base,status:'borrador',notas:'',notaClaude:'',by:'daniel',parent:''}; E.map.name=E.meta.name;
     toast('Creé una copia tuya para editar. El original queda intacto.',3.2);
