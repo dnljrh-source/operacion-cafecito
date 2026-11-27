@@ -1029,12 +1029,12 @@ function createEngine(){
         doors.push({pivs,ex:false,glass:true,sid:p.sid,x:p.x,z:p.z,yaw:p.yaw,len,ang:0,target:0,open:false,hold:0}); break; }
       case 'fuego': { const g=group(p.x,p.z,0), W=Math.max(0.4,p.w), D=Math.max(0.4,p.d), area=W*D;
         const glow=new THREE.Mesh(BOX,own(new THREE.MeshBasicMaterial({color:0xff5a1f,transparent:true,opacity:0.55,depthWrite:false,blending:THREE.AdditiveBlending}))); glow.scale.set(W,0.01,D); glow.position.set(0,0.012,0); glow.renderOrder=3; g.add(glow);
-        const parts=[], n=Math.round(Math.min(60,Math.max(8,area*9)));
+        const parts=[], n=Math.round(Math.min(90,Math.max(12,area*14)));
         for(let i=0;i<n;i++){ const sp=new THREE.Sprite(own(new THREE.SpriteMaterial({map:flameTex(),color:0xffd27a,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}))); sp.material.userData.keepMap=true; sp.renderOrder=4; g.add(sp);
-          parts.push({sp,t:Math.random(),v:0.55+Math.random()*0.5,x:(Math.random()-0.5)*W*0.92,z:(Math.random()-0.5)*D*0.92,s:0.35+Math.random()*0.35,ph:Math.random()*6.3}); }
+          parts.push({sp,t:Math.random(),v:0.55+Math.random()*0.5,x:(Math.random()-0.5)*W*0.92,z:(Math.random()-0.5)*D*0.92,s:0.55+Math.random()*0.5,ph:Math.random()*6.3}); }
         const smoke=[], ns=Math.round(Math.min(18,Math.max(6,area*2.5)));
         for(let i=0;i<ns;i++){ const sp=new THREE.Sprite(own(new THREE.SpriteMaterial({map:smokeTex(),color:0x3a3a3a,transparent:true,opacity:0,depthWrite:false}))); sp.material.userData.keepMap=true; g.add(sp); smoke.push({sp,t:i/ns,x:(Math.random()-0.5)*W*0.7,z:(Math.random()-0.5)*D*0.7}); }
-        const light=new THREE.PointLight(0xff8a3a,Math.min(2.2,0.8+area*0.2),5+Math.sqrt(area)*2,2); light.position.set(0,0.8,0); g.add(light);
+        const light=new THREE.PointLight(0xff8a3a,0.7,4+Math.sqrt(area)*1.5,2); light.position.set(0,0.8,0); g.add(light);
         fires.push({glow,parts,smoke,light,W,D,seed:p.seed}); break; }
       case 'wc': { const g=group(p.x,p.z,p.yaw), W=0xf4f6f7;
         cyl(W,0.3,0.36,0.34,0,0.18,0.08,g); cyl(W,0.4,0.06,0.48,0,0.39,0.1,g); box(0xe7eaec,0.38,0.03,0.44,0,0.43,0.1,g,true);
@@ -1450,9 +1450,9 @@ function createEngine(){
       { const t=now/1000; for(const f of fires){
         f.glow.material.opacity=0.45+0.15*Math.sin(t*7+f.seed)+0.08*Math.sin(t*19);
         for(const q of f.parts){ q.t+=dt*q.v; if(q.t>=1){ q.t-=1; q.x=(Math.random()-0.5)*f.W*0.92; q.z=(Math.random()-0.5)*f.D*0.92; q.v=0.55+Math.random()*0.5; }
-          const u=q.t, sz=q.s*(1-u*0.55)*(0.85+0.15*Math.sin(t*14+q.ph)); q.sp.position.set(q.x+Math.sin(t*3+q.ph)*0.08*u,0.12+u*1.25+sz*0.5,q.z+Math.cos(t*2.5+q.ph)*0.06*u);
-          q.sp.scale.set(sz*0.6,sz,1); q.sp.material.opacity=Math.pow(Math.sin(Math.PI*u),0.6); q.sp.material.color.setRGB(1,0.85-u*0.55,0.5-u*0.45); } // de amarillo a rojo al subir
-        f.light.intensity=(0.8+0.3*Math.sin(t*13+f.seed)+0.12*Math.sin(t*31))*Math.min(2.2,0.8+f.W*f.D*0.2)/1.1;
+          const u=q.t, sz=q.s*(1-u*0.55)*(0.85+0.15*Math.sin(t*14+q.ph)); q.sp.position.set(q.x+Math.sin(t*3+q.ph)*0.08*u,0.05+u*1.1+sz*0.7,q.z+Math.cos(t*2.5+q.ph)*0.06*u);
+          q.sp.scale.set(sz*0.55,sz*1.45,1); q.sp.material.opacity=Math.pow(Math.sin(Math.PI*u),0.6); q.sp.material.color.setRGB(1,0.85-u*0.55,0.5-u*0.45); } // de amarillo a rojo al subir
+        f.light.intensity=0.6+0.22*Math.sin(t*13+f.seed)+0.1*Math.sin(t*31);
         for(const s of f.smoke){ s.t=(s.t+dt*0.25)%1; const u=s.t; s.sp.position.set(s.x+Math.sin(u*6+s.x*3)*0.2*u,1.2+u*1.9,s.z+Math.cos(u*5)*0.15*u); const sc=0.5+u*1.6; s.sp.scale.set(sc,sc,1); s.sp.material.opacity=Math.min(1,u*4)*(1-u)*0.8; } } }
       for(const d of doors){ if(!d.held&&!d.open&&d.hold>0) d.hold=Math.max(0,d.hold-dt*1.5); d.ang+=(d.target-d.ang)*Math.min(1,dt*7); if(d.piv) d.piv.rotation.y=d.ang; if(d.pivs) for(const q of d.pivs) q.p.rotation.y=d.ang*q.s; }
       if(alarm&&game.state==='play'){ alarm.t+=dt; if(alarm.t<8&&alarm.t>=alarm.next){ alarm.hi=!alarm.hi; sfx.siren(alarm.hi); alarm.next=alarm.t+0.45; } document.body.classList.toggle('alarm',alarm.t<8&&Math.floor(alarm.t*2.2)%2===0); } else document.body.classList.remove('alarm');
