@@ -730,6 +730,7 @@ const hoyCLg=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago'}).
 var DAILY=null; // daily de hoy: {fecha, dd, name}
 const DAILY_PFX='Daily · ';
 function dailyMapFrom(dd){ if(!dd||!dd.config) return null; const c=dd.config; let m;
+  if(c.alias){ return BUILTIN[c.alias]?clone(BUILTIN[c.alias]):null; } // el día usa una etapa tal cual, con su mismo ranking
   if(c.map&&typeof c.map==='object') m=clone(c.map); else { if(!BUILTIN[dd.base]) return null; m=clone(BUILTIN[dd.base]); m.start=Object.assign({},m.start,c.start||{}); if(Array.isArray(c.bosses)) m.bosses=c.bosses; }
   const out=sanitizeMap(m); out.name=DAILY_PFX+dd.fecha; return out; }
 const dailyOk=()=>!!(DAILY&&dailyMapFrom(DAILY.dd));
@@ -1496,7 +1497,7 @@ const rankingOn=!!(SUPA.url&&SUPA.key);
 const dailyCache={};
 async function fetchDaily(fecha){ const k=fecha||'hoy'; if(dailyCache[k]) return dailyCache[k];
   const dd=await supa('rpc/obtener_daily',{method:'POST',body:JSON.stringify(fecha?{p_fecha:fecha}:{})}); if(!dd||!dd.config) return null;
-  const r={fecha:dd.fecha,dd,name:DAILY_PFX+dd.fecha}; dailyCache[k]=r; dailyCache[dd.fecha]=r; return r; }
+  const mm=dailyMapFrom(dd), r={fecha:dd.fecha,dd,name:(mm&&mm.name)||DAILY_PFX+dd.fecha}; dailyCache[k]=r; dailyCache[dd.fecha]=r; return r; }
 async function loadDaily(){ try{ DAILY=await fetchDaily(null); }catch(e){ console.error(e); DAILY=null; } if(PAGE==='daily'&&!document.body.classList.contains('playing')){ try{ dailyMenu(); }catch(e){ console.error(e); } } }
 if(rankingOn&&PAGE!=='juego') setTimeout(loadDaily,0);
 // página /daily: el menú muestra solo el daily de hoy
@@ -1672,7 +1673,7 @@ async function loadRank(){
 if(rankingOn){
   $('rankBtn').hidden=false;
   $('rankBtn').addEventListener('click',async()=>{ const sel=$('rMap'), names=PAGE==='daily'?(dailyOk()?[DAILY.name]:[]):[...new Set([...Object.values(BUILTIN).map(b=>b.name),...sortedDocs().map(([,d])=>d.name)])];
-    const label=n=>n.startsWith(DAILY_PFX)?(DAILY&&n===DAILY.name?'☀ Daily de hoy':'Daily del '+new Date(n.slice(DAILY_PFX.length)+'T12:00').toLocaleDateString('es-CL',{day:'numeric',month:'short'})):n;
+    const label=n=>(DAILY&&n===DAILY.name)?'☀ Daily de hoy':n.startsWith(DAILY_PFX)?('Daily del '+new Date(n.slice(DAILY_PFX.length)+'T12:00').toLocaleDateString('es-CL',{day:'numeric',month:'short'})):n;
     const fill=()=>{ const v=sel.value; sel.textContent=''; for(const n of names){ const o=document.createElement('option'); o.value=n; o.textContent=label(n); sel.appendChild(o); } if(v&&names.includes(v)) sel.value=v; };
     fill(); const cur=mapById(menuPick); if(cur&&names.includes(cur.name)) sel.value=cur.name; showScreen('rank'); loadRank();
     if(PAGE==='daily'){ try{ const rows=await supa(SUPA.table+'?select=mapa&mapa=like.Daily*&order=creado.desc&limit=500')||[]; let add=false;
@@ -1783,7 +1784,7 @@ $('dPrev').addEventListener('click',()=>{ DCAL.m--; if(DCAL.m<0){ DCAL.m=11; DCA
 $('dNext').addEventListener('click',()=>{ DCAL.m++; if(DCAL.m>11){ DCAL.m=0; DCAL.y++; } renderCal(); });
 $('dKeyOk').addEventListener('click',()=>{ DKEY=$('dKey').value.trim(); try{ localStorage.setItem('cafecito-daily-clave',DKEY); }catch(e){} dailyLoadList(); });
 $('dKey').addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Enter') $('dKeyOk').click(); });
-function cfgMap(cfg){ if(cfg&&cfg.map) return sanitizeMap(clone(cfg.map)); const m=clone(BUILTIN.etapa3); if(cfg){ m.start=Object.assign({},m.start,cfg.start||{}); if(Array.isArray(cfg.bosses)) m.bosses=clone(cfg.bosses); } return m; }
+function cfgMap(cfg){ if(cfg&&cfg.alias&&BUILTIN[cfg.alias]) return clone(BUILTIN[cfg.alias]); if(cfg&&cfg.map) return sanitizeMap(clone(cfg.map)); const m=clone(BUILTIN.etapa3); if(cfg){ m.start=Object.assign({},m.start,cfg.start||{}); if(Array.isArray(cfg.bosses)) m.bosses=clone(cfg.bosses); } return m; }
 function enterDaily(f){ flushSave(); let cfg=DCAL.list.get(f), from=null;
   if(!cfg){ const prev=[...DCAL.list.keys()].filter(k=>k<f).sort().pop(); if(prev){ from=prev; } }
   const src=cfg||(from?DCAL.list.get(from):null), map=cfgMap(src);
