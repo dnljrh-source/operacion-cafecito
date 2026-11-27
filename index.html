@@ -1247,7 +1247,7 @@ function createEngine(){
     opts=opts||{}; audioOn(); load(map,key,opts.name); current.fromEditor=!!opts.fromEditor; current.onExit=opts.onExit||null;
     document.querySelectorAll('.toEditor').forEach(b=>b.hidden=!current.fromEditor);
     $('mapTitle').textContent=current.name||'Objetivos';
-    if(typeof ENV!=='undefined'&&ENV==='dev'&&!ghostInit){ ghostInit=true; setGhost(true); } ghostUsed=ghost;
+    if(((typeof ENV!=='undefined'&&ENV==='dev')||PAGE==='gestor')&&!ghostInit){ ghostInit=true; setGhost(true); } ghostUsed=ghost;
     clearKeys(); game.state='play'; showScreen(null); document.body.classList.add('playing'); suspended=false;
     run={ruta:[],next:0.25,seq:++runSeq}; rec();
     document.dispatchEvent(new CustomEvent('cafe-start',{detail:{m:current.name||'Mapa',fromEditor:current.fromEditor,seq:run.seq}}));
@@ -1281,7 +1281,7 @@ function createEngine(){
       if(e.code==='KeyC'&&!e.repeat) P.crouch=!P.crouch;
       if(e.code==='KeyE'&&!e.repeat){ const it=currentTarget; if(it&&!it.hold&&it.ready()) it.act(); }
       if(e.code==='KeyR'&&!e.repeat){ restart(); return; }
-      if(e.code==='KeyG'&&!e.repeat&&typeof ENV!=='undefined'&&ENV==='dev'){ setGhost(!ghost); toast(ghost?'Modo fantasma activado: los jefes no te ven (G para quitarlo)':'Modo fantasma desactivado',2.2); }
+      if(e.code==='KeyG'&&!e.repeat&&((typeof ENV!=='undefined'&&ENV==='dev')||PAGE==='gestor')){ setGhost(!ghost); toast(ghost?'Modo fantasma activado: los jefes no te ven (G para quitarlo)':'Modo fantasma desactivado',2.2); }
       if((e.code==='Escape'&&dragMode)||e.code==='KeyP') pause();
     } else if(game.state==='pause'){ if(e.code==='KeyP'&&!e.repeat) resume(); else if(e.code==='KeyR'&&!e.repeat) restart(); }
     else if((game.state==='caught'||game.state==='win')&&game.overlay){ if(e.code==='KeyR'&&!e.repeat) restart(); }
@@ -1492,7 +1492,8 @@ const ENV=PROD_HOSTS.includes(location.hostname)?'prod':'dev';
 const SUPA={url:'https://mczzzznhddyevvfydloh.supabase.co',key:'sb_publishable_vDIwcp-c0JRwkVa772J5RQ_k5h0_YVZ',table:ENV==='prod'?'puntajes':'puntajes_dev'};
 if(ENV==='dev'||PAGE==='gestor') setTimeout(cloudLoad,0); // el gestor lee la última versión de las etapas (sin guardarlas)
 if(ENV==='dev'){ document.title='[DEV] '+document.title; const b=document.createElement('div'); b.id='envBadge'; b.textContent='DEV · ambiente de pruebas'; document.body.appendChild(b);
-  const g=document.createElement('div'); g.id='ghostBadge'; g.hidden=true; g.textContent='👻 Modo fantasma · G para quitarlo'; document.body.appendChild(g); }
+}
+if(ENV==='dev'||PAGE==='gestor'){ const g=document.createElement('div'); g.id='ghostBadge'; g.hidden=true; g.textContent='👻 Modo fantasma · G para quitarlo'; document.body.appendChild(g); }
 const rankingOn=!!(SUPA.url&&SUPA.key);
 const dailyCache={};
 async function fetchDaily(fecha){ const k=fecha||'hoy'; if(dailyCache[k]) return dailyCache[k];
