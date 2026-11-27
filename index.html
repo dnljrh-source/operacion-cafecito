@@ -492,8 +492,8 @@ const ETAPA3={"v":1,"name":"Etapa 3 · Piso 9","estilo":"loft","size":{"w":46,"d
 // Etapas en prueba: solo aparecen en dev. Para publicar una, sácala de esta lista.
 const SOLO_DEV={etapa3:ETAPA3};
 const ES_PROD=['operacion-cafecito.pages.dev','dnljrh-source.github.io'].includes(location.hostname);
-// páginas: / (etapas), /daily (solo el daily y su historial), /gestor (programar los días; solo dev)
-const PAGE=(()=>{ const p=location.pathname.replace(/\/+$/,'').toLowerCase(); return p.endsWith('/gestor')?'gestor':p.endsWith('/daily')?'daily':'juego'; })();
+// páginas: / (solo el daily y su historial), /etapas (juego con las etapas), /gestor (programar los días; solo dev)
+const PAGE=(()=>{ const p=location.pathname.replace(/\/+$/,'').toLowerCase(); return p.endsWith('/gestor')?'gestor':p.endsWith('/etapas')?'juego':'daily'; })(); // la dirección principal es el daily
 const EDITOR_ON=!ES_PROD; // el editor de mapas no existe en prod
 const BUILTIN=Object.assign({original:ORIGINAL,etapa2:ETAPA2},ES_PROD?{}:SOLO_DEV);
 const isBuiltin=id=>Object.prototype.hasOwnProperty.call(BUILTIN,id);

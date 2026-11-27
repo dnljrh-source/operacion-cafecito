@@ -24,6 +24,6 @@ Los cambios se suben primero a `dev`. Cuando están probados, se juntan con `mai
 
 | Página | Para qué |
 |---|---|
-| `/` | Juego normal con las etapas |
-| `/daily` | Solo el daily de hoy y el ranking de los días anteriores |
+| `/` | Solo el daily de hoy y el ranking de los días anteriores |
+| `/etapas` | Juego normal con las etapas (y el editor en dev) |
 | `/gestor` | Programar cada día del daily: plano completo, inicio, cafetera con café y rutas de jefes (solo en dev; pide clave) |
