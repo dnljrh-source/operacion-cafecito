@@ -553,7 +553,7 @@ function sanitizeMap(m){
   for(const it of (Array.isArray(m.items)?m.items:[]).slice(0,900)){
     if(!it||typeof it!=='object'||!Object.prototype.hasOwnProperty.call(TYPES,it.t)) continue;
     const T=TYPES[it.t];
-    if(T.kind==='point'){ const o={t:it.t,x:X(it.x),z:Z(it.z),r:normR(it.r)}; if(it.t==='letrero') o.text=String(it.text||'LETRERO').slice(0,22); if(it.t==='puerta'&&it.text) o.text=String(it.text).slice(0,12); if(it.t==='npc') o.anim=['espera','conversa','baila'].includes(it.anim)?it.anim:'espera'; out.items.push(o); continue; }
+    if(T.kind==='point'){ const o={t:it.t,x:X(it.x),z:Z(it.z),r:normR(it.r)}; if(it.t==='letrero') o.text=String(it.text||'LETRERO').slice(0,22); if(it.t==='puerta'&&it.text) o.text=String(it.text).slice(0,12); if(it.t==='npc'){ o.anim=['espera','conversa','baila'].includes(it.anim)?it.anim:'espera'; if(['h','m'].includes(it.sexo)) o.sexo=it.sexo; if(['rubio','moreno','negro'].includes(it.tono)) o.tono=it.tono; } out.items.push(o); continue; }
     const o={t:it.t,x0:X(it.x0),z0:Z(it.z0),x1:X(it.x1),z1:Z(it.z1)};
     if(T.kind==='line'){ const q=lineSnap({x:o.x0,z:o.z0},{x:o.x1,z:o.z1},2); o.x1=q.x; o.z1=q.z; if(it.t==='puerta_vidrio'){ if(Math.abs(o.x1-o.x0)>=Math.abs(o.z1-o.z0)) o.z1=o.z0; else o.x1=o.x0; } if(Math.hypot(o.x1-o.x0,o.z1-o.z0)<0.05){ o.x1=r2(o.x0+(o.x1>=o.x0?0.05:-0.05)); o.z1=o.z0; } }
     else { if(Math.abs(o.x1-o.x0)<0.05) o.x1=r2(Math.min(o.x0,o.x1)+0.05); if(Math.abs(o.z1-o.z0)<0.05) o.z1=r2(Math.min(o.z0,o.z1)+0.05); }
@@ -652,7 +652,7 @@ function layout(map){
     if(it.t==='puerta_real'||it.t==='salida'){ const [lw,ld]=fpOf(it.t==='salida'?1.2:0.92,0.07,it.r); S(it.x,it.z,lw,ld,2.2,it.t==='salida'?'exit':'door'); solids[solids.length-1].door=true;
       props.push({k:it.t,x:it.x,z:it.z,yaw,r:it.r,sid:solids.length-1}); return; }
     if(it.t==='pelota'){ props.push({k:'pelota',x:it.x,z:it.z}); return; } // sin sólido: rueda y rebota con física
-    if(it.t==='npc'){ props.push({k:'npc',x:it.x,z:it.z,yaw,anim:it.anim||'espera',seed:idx}); return; }
+    if(it.t==='npc'){ props.push({k:'npc',x:it.x,z:it.z,yaw,anim:it.anim||'espera',seed:idx,sexo:it.sexo,tono:it.tono}); return; }
     if(it.t==='fuego'){ S(it.x,it.z,0.9,0.9,0.5,'fire',false); props.push({k:'fuego',x:it.x,z:it.z,w:0.9,d:0.9,seed:idx}); return; } // no se puede pisar, pero no tapa la vista
     if(it.t==='wc'||it.t==='lavamanos'||it.t==='basurero'){ S(it.x,it.z,w,d,T.h,'fixture'); props.push({k:it.t,x:it.x,z:it.z,yaw,r:it.r}); return; }
     if(T.h>0) S(it.x,it.z,w,d,T.h,it.t==='planta'||it.t==='planta_alta'?'plant':it.t==='persona'?'person':T.h>=1.8?'tall':T.h>=1.05?'mid':'low');
@@ -1115,7 +1115,9 @@ function createEngine(){
       case 'pelota': { const BR=0.17, m=new THREE.Mesh(SPHERE,M(0x7ccff5)); m.scale.setScalar(BR); m.castShadow=true; m.receiveShadow=true; root.add(m);
         const band=new THREE.Mesh(new THREE.TorusGeometry(1,0.06,6,24),own(new THREE.MeshBasicMaterial({color:0xffffff}))); band.rotation.x=Math.PI/2; m.add(band);
         balls.push({m,x0:p.x,z0:p.z,x:p.x,y:BR,z:p.z,vx:0,vy:0,vz:0,R:BR,held:false,cd:0}); m.position.set(p.x,BR,p.z); break; }
-      case 'npc': { const i=p.seed||0, w=person({skin:[0xf1c9a5,0xd9a37e,0xb07c57,0x8d5a3b][i%4],top:[0x4a90b8,0xc0504d,0x6aa86d,0xe2b93b,0x8e6ac8,0x2f6f73][i%6],pants:[0x3d4452,0x2a2f3a,0x6b5a45][i%3],hairC:[0x3b2a20,0x1c1b1f,0x8a5a2b,0xc8a15a][i%4],hair:['top','long','bun','bald'][i%4],glasses:i%5===2,beard:i%7===3});
+      case 'npc': { const i=p.seed||0, TONO={rubio:[0xf3cfae,0xd9b25a],moreno:[0xc68e62,0x3b2a20],negro:[0x6b4630,0x161414]}[p.tono], muj=p.sexo==='m', hom=p.sexo==='h';
+        const w=person({skin:TONO?TONO[0]:[0xf1c9a5,0xd9a37e,0xb07c57,0x8d5a3b][i%4],top:[0x4a90b8,0xc0504d,0x6aa86d,0xe2b93b,0x8e6ac8,0x2f6f73][i%6],pants:[0x3d4452,0x2a2f3a,0x6b5a45][i%3],
+          hairC:TONO?TONO[1]:[0x3b2a20,0x1c1b1f,0x8a5a2b,0xc8a15a][i%4],hair:muj?'bun':hom?['top','bald','top'][i%3]:['top','long','bun','bald'][i%4],glasses:i%5===2,beard:!muj&&i%7===3});
         if(p.seated){ w.g.position.set(p.x,0.5-0.9*0.92,p.z); w.inner.scale.setScalar(0.92); w.g.rotation.y=p.yaw; w.legL.rotation.x=w.legR.rotation.x=-Math.PI/2; w.armL.rotation.x=w.armR.rotation.x=-1.1; workers.push(w); }
         else { w.g.position.set(p.x,0,p.z); w.g.rotation.y=p.yaw; npcs.push({w,anim:p.anim,ph:i*1.37,yaw:p.yaw,x:p.x,z:p.z}); }
         break; }
@@ -2249,7 +2251,11 @@ function buildPanel(){
     if(o.t==='npc'){ const L=E.L&&E.L.props.find(q=>q.k==='npc'&&q.seed===s.i), sel=el('select',{}); for(const [v,t] of [['espera','Esperando'],['conversa','Conversando'],['baila','Bailando']]){ const op=el('option',{value:v,text:t}); if((o.anim||'espera')===v) op.selected=true; sel.append(op); }
       sel.addEventListener('change',()=>{ snapshot(); o.anim=sel.value; changed(); });
       sec.append(el('p',{text:L&&L.seated?'Está sentado en una silla: mira hacia su escritorio (flecha en el plano). Muévelo lejos de las sillas para que quede de pie.':'Está de pie. La flecha del plano muestra hacia dónde mira; gíralo con R o «Girar 90°». Si lo pones sobre una silla se sienta solo.'}));
-      if(!(L&&L.seated)) sec.append(el('label',{class:'f'},['Qué hace de pie',sel])); }
+      if(!(L&&L.seated)) sec.append(el('label',{class:'f'},['Qué hace de pie',sel]));
+      const opt=(lab,key,list)=>{ const q=el('select',{}); for(const [v,t] of list){ const op=el('option',{value:v,text:t}); if((o[key]||'')===v) op.selected=true; q.append(op); }
+        q.addEventListener('change',()=>{ snapshot(); if(q.value) o[key]=q.value; else delete o[key]; changed(); }); sec.append(el('label',{class:'f'},[lab,q])); };
+      opt('Sexo','sexo',[['','Al azar'],['h','Hombre'],['m','Mujer (con moño)']]);
+      opt('Tipo','tono',[['','Al azar'],['rubio','Rubio'],['moreno','Moreno'],['negro','Negro']]); }
     if(T.kind==='point') sec.append(posFields(o)); if(T.kind==='rect') sec.append(rectFields(o)); if(T.kind==='line') sec.append(lineFields(o));
     if(T.kind==='point') sec.append(el('div',{class:'row'},[el('span',{text:(o.t==='salida'?'El letrero SALIDA mira hacia el ':'Mira hacia el ')+dirName(o.r),style:'font-size:14px;color:#c3cad4'}),el('button',{class:'ghost sm',text:'Girar 90°',onclick:()=>rotateSel(1)})]));
     if(o.t==='tele'||o.t==='letrero') sec.append(el('p',{text:'Se pega solo al muro que tenga detrás. Que mire hacia donde estará quien lo lea.'}));
