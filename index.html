@@ -290,7 +290,7 @@ body.editing #editor{display:grid}
     <div class="scorebox" id="saveBox" hidden>
       <label class="f" id="wNameRow" hidden>Tu nombre para el ranking<input id="wName" maxlength="20" placeholder="Ej: Pedro" autocomplete="nickname"></label>
       <div class="row"><button id="wSave" class="sm">Guardar en el ranking</button><span id="wMsg" role="status"></span></div>
-      <div class="rscroll" id="wTopBox" hidden><table class="rtable"><thead><tr><th class="n">#</th><th>Nombre</th><th class="n">Tiempo</th><th class="n">Visto</th><th>Nota</th></tr></thead><tbody id="wTop"></tbody></table></div>
+      <div class="rscroll" id="wTopBox" hidden><table class="rtable"><thead><tr><th class="n">#</th><th>Nombre</th><th class="n">Tiempo</th><th class="n">Visto</th><th>Nota</th><th>Fecha</th></tr></thead><tbody id="wTop"></tbody></table></div>
     </div>
     <p class="brief">Nadie sospecha nada… por ahora.</p>
     <div class="row"><button id="againBtn">Jugar de nuevo <kbd>R</kbd></button><button class="ghost toEditor">Volver al editor</button><button class="ghost toMenu">Menú</button></div>
@@ -1567,7 +1567,7 @@ function fillRows(tbody,rows,me,withDate,onPick){
       tr.addEventListener('click',go); tr.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }); } if(me&&String(r.nombre).trim().toLowerCase()===me.n.toLowerCase()&&Math.abs(Number(r.tiempo)-me.t)<0.011) tr.classList.add('me');
     const td=(t,c)=>{ const x=document.createElement('td'); if(c) x.className=c; x.textContent=t; tr.appendChild(x); };
     td(String(r.pos||i+1),'n'); td(String(r.nombre||'')); td(fmt2(Number(r.tiempo)||0),'n'); td(String(r.visto??0),'n'); td('★'.repeat(clamp(Number(r.estrellas)||1,1,3)));
-    if(withDate) td(r.creado?new Date(r.creado).toLocaleDateString('es-CL',{day:'numeric',month:'short'}):'');
+    if(withDate) td(r.creado?new Date(r.creado).toLocaleString('es-CL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Santiago'}).replace(',',''):'','n');
     tbody.appendChild(tr); });
 }
 /* ---- recorridos: plano del mapa + camino ---- */
@@ -1682,7 +1682,7 @@ $('wSave').addEventListener('click',async()=>{
     const mine=list[pos-1]; const improved=mine&&Math.abs(Number(mine.tiempo)-lastRun.t)<0.011;
     $('wMsg').textContent=improved?`¡Guardado! Quedaste en el lugar ${pos} de ${list.length}.`:`Guardado. Tu mejor marca sigue siendo ${fmt2(Number(mine?mine.tiempo:lastRun.t))} (lugar ${pos}).`;
     const top=list.slice(0,10).map((r,i)=>Object.assign({pos:i+1},r)); if(pos>10&&mine) top.push(Object.assign({pos},mine));
-    fillRows($('wTop'),top,{n,t:Number(mine?mine.tiempo:lastRun.t)},false,r=>showRemoteRoute(r,lastRun.m,'w')); $('wTopBox').hidden=false;
+    fillRows($('wTop'),top,{n,t:Number(mine?mine.tiempo:lastRun.t)},true,r=>showRemoteRoute(r,lastRun.m,'w')); $('wTopBox').hidden=false;
   }catch(e){ $('wMsg').textContent=netMsg(e); $('wSave').hidden=false; $('wSave').disabled=false; }
   saving=false;
 });
