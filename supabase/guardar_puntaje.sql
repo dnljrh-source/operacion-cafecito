@@ -45,6 +45,7 @@ declare
   tiene_cap bool := false; tiene_cafe bool := false; cerca_maquina numeric := 0;
   v_tiempo numeric := round(p_tiempo, 2); v_visto int; v_estr int; v_nombre text := trim(coalesce(p_nombre, ''));
   err text := null;
+  ta numeric[] := '{}'; xa numeric[] := '{}'; za numeric[] := '{}'; fa int[] := '{}'; j int; tw numeric; dw numeric;
 begin
   select * into pa from public.partidas where id = p_partida for update;
   if not found then return json_build_object('ok', false, 'error', 'Partida no válida'); end if;
@@ -85,7 +86,8 @@ begin
         if dt <= 0 or dt > 1.0 then err := 'ruta-tiempo'; exit; end if;
         dist := sqrt((x-px)^2 + (z-pz)^2);
         vmax := case when (pf & 2) = 2 then 3.1 else 5.3 end;   -- con café no se puede correr
-        if dist > vmax * dt * 1.15 + 0.25 then err := 'velocidad'; exit; end if;
+        -- tolerancia según los recorridos reales (el más rápido llega a 0,997 del máximo); antes 15 % + 0,25 m dejaba pasar un 20 % más rápido
+        if dist > vmax * dt * 1.06 + 0.06 then err := 'velocidad'; exit; end if;
         -- tiempo junto a la cafetera buena (la preparación dura 4 s, se puede hacer en tramos)
         if not tiene_cafe and (cap is null or tiene_cap)
            and sqrt((x-(mq->>'x')::numeric)^2 + (z-(mq->>'z')::numeric)^2) <= 2.5
@@ -106,6 +108,19 @@ begin
       if tiene_cafe and (f & 2) = 0 then err := 'cafe-perdido'; exit; end if;
 
       pt := t; px := x; pz := z; pf := f;
+      ta := ta || t; xa := xa || x; za := za || z; fa := fa || f;
+    end loop;
+  end if;
+
+  -- velocidad sostenida: en cualquier tramo de 1 s o más, no avanzar más rápido que corriendo (o caminando con el café)
+  if err is null then
+    j := 1;
+    for i in 1 .. coalesce(array_length(ta, 1), 0) loop
+      if j < i then j := i; end if;
+      while j <= array_length(ta, 1) and ta[j] - ta[i] < 1.0 loop j := j + 1; end loop;
+      exit when j > array_length(ta, 1);
+      tw := ta[j] - ta[i]; dw := sqrt((xa[j]-xa[i])^2 + (za[j]-za[i])^2);
+      if dw > (case when (fa[i] & 2) = 2 then 3.1 else 5.3 end) * tw * 1.05 + 0.1 then err := 'velocidad'; exit; end if;
     end loop;
   end if;
 
