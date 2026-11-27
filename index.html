@@ -2224,7 +2224,7 @@ function buildPanel(){
       sec.append(el('label',{class:'f'},['Texto',inp])); }
     if(o.t==='npc'){ const L=E.L&&E.L.props.find(q=>q.k==='npc'&&q.seed===s.i), sel=el('select',{}); for(const [v,t] of [['espera','Esperando'],['conversa','Conversando'],['baila','Bailando']]){ const op=el('option',{value:v,text:t}); if((o.anim||'espera')===v) op.selected=true; sel.append(op); }
       sel.addEventListener('change',()=>{ snapshot(); o.anim=sel.value; changed(); });
-      sec.append(el('p',{text:L&&L.seated?'Está sentado en una silla: queda trabajando en su escritorio. Muévelo lejos de las sillas para que quede de pie.':'Está de pie. Si lo pones sobre una silla (de un escritorio o cubículo) se sienta solo.'}));
+      sec.append(el('p',{text:L&&L.seated?'Está sentado en una silla: mira hacia su escritorio (flecha en el plano). Muévelo lejos de las sillas para que quede de pie.':'Está de pie. La flecha del plano muestra hacia dónde mira; gíralo con R o «Girar 90°». Si lo pones sobre una silla se sienta solo.'}));
       if(!(L&&L.seated)) sec.append(el('label',{class:'f'},['Qué hace de pie',sel])); }
     if(T.kind==='point') sec.append(posFields(o)); if(T.kind==='rect') sec.append(rectFields(o)); if(T.kind==='line') sec.append(lineFields(o));
     if(T.kind==='point') sec.append(el('div',{class:'row'},[el('span',{text:(o.t==='salida'?'El letrero SALIDA mira hacia el ':'Mira hacia el ')+dirName(o.r),style:'font-size:14px;color:#c3cad4'}),el('button',{class:'ghost sm',text:'Girar 90°',onclick:()=>rotateSel(1)})]));
@@ -2306,6 +2306,10 @@ function paint(){
       c.fillStyle=p.k==='tele'?'#5aa7d8':'#ffcf3f'; c.beginPath(); c.moveTo(-5,-0.06*s-4); c.lineTo(5,-0.06*s-4); c.lineTo(0,-0.06*s-11); c.closePath(); c.fill(); c.restore();
       if(p.k==='letrero'&&s>14&&p.text){ c.fillStyle='#fff'; c.font='600 11px Rubik, sans-serif'; c.textAlign='center'; c.fillText(p.text,x,y+0.4*s+10); } }
   }
+  // NPC: flecha hacia donde mira (sentado: hacia su escritorio)
+  for(const q of (E.L?E.L.props:[])){ if(q.k!=='npc') continue; const fx=Math.sin(q.yaw), fz=Math.cos(q.yaw), [cx,cy]=toS(q.x,q.z), [ax,ay]=toS(q.x+fx*0.6,q.z+fz*0.6), px=-fz, pz=fx, w=Math.max(5,0.2*s);
+    c.strokeStyle=q.seated?'#c9a77a':'#ffb35c'; c.fillStyle=c.strokeStyle; c.lineWidth=2.5; c.beginPath(); c.moveTo(cx,cy); c.lineTo(ax,ay); c.stroke();
+    c.beginPath(); c.moveTo(ax+fx*w,ay+fz*w); c.lineTo(ax+px*w*0.8,ay+pz*w*0.8); c.lineTo(ax-px*w*0.8,ay-pz*w*0.8); c.closePath(); c.fill(); }
   // puertas de emergencia: marca del lado que dice SALIDA
   for(const it of E.map.items){ if(it.t!=='salida') continue; const yaw=dirToYaw(it.r), fx=Math.sin(yaw), fz=Math.cos(yaw), [cx,cy]=toS(it.x,it.z), [ax,ay]=toS(it.x+fx*0.55,it.z+fz*0.55), px=-fz, pz=fx, w=Math.max(6,0.28*s);
     c.fillStyle='#1f9d55'; c.beginPath(); c.moveTo(ax+fx*w,ay+fz*w); c.lineTo(ax+px*w,ay+pz*w); c.lineTo(ax-px*w,ay-pz*w); c.closePath(); c.fill();
