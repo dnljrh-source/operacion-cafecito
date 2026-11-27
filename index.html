@@ -1305,7 +1305,7 @@ function createEngine(){
     const st=LV.start;
     Object.assign(P,{x:st.x,z:st.z,yaw:-st.r*D2R,pitch:-0.12,eye:STAND_EYE,crouch:false,running:false,moving:false,noisy:false,capsule:false,coffee:false,brew:0,brewing:false,bob:0,warned:false});
     const nm=LV.obj.machines.length; working=(current.cafetera!=null&&current.cafetera>=0&&current.cafetera<nm)?current.cafetera:nm>1?Math.floor(Math.random()*nm):0; // daily: la cafetera programada desde el primer momento found=nm>1?-1:0; checked=new Set();
-    for(const b of bosses){ const w=b.path[0]; Object.assign(b,{x:w.x,z:w.z,i:0,dir:1,state:'walk',t:0,ph:0,susp:0,lost:9,seeing:false,cd:0,yaw:w.yaw,route:null,goal:null,needReturn:false,hurry:1}); }
+    for(const b of bosses){ unstun(b); const w=b.path[0]; Object.assign(b,{x:w.x,z:w.z,i:0,dir:1,state:'walk',t:0,ph:0,susp:0,lost:9,seeing:false,cd:0,yaw:w.yaw,route:null,goal:null,needReturn:false,hurry:1}); }
     heldBall=null; P.px=P.x; P.pz=P.z; for(const b of balls) Object.assign(b,{x:b.x0,y:b.R,z:b.z0,vx:0,vy:0,vz:0,held:false,cd:0});
     for(const d of doors){ d.open=false; d.ang=d.target=0; d.hold=0; if(d.piv) d.piv.rotation.y=0; if(d.pivs) for(const q of d.pivs) q.p.rotation.y=0; if(d.solid){ d.solid.off=false; d.solid.blocks=!d.glass; } } alarm=null;
     Object.assign(game,{time:0,catcher:null,overlay:false,spotted:0,maxS:0,seen:false});
@@ -1425,6 +1425,10 @@ function createEngine(){
   /* pelotas: gravedad, rebotes contra el piso, muebles y muros, se pueden patear, agarrar y lanzar */
   function throwBall(){ const b=heldBall; if(!b) return; heldBall=null; b.held=false; const cp=Math.cos(P.pitch), sp=10;
     b.vx=-Math.sin(P.yaw)*cp*sp; b.vz=-Math.cos(P.yaw)*cp*sp; b.vy=Math.sin(P.pitch)*sp+2.2; b.cd=0.25; tone(320,0.06,'triangle',0.05); }
+  function stunBoss(k){ const was=k.state==='stun'; k.state='stun'; k.t=3; k.seeing=false; k.susp=Math.min(k.susp,0.3); k.route=k.route||null;
+    tone(520,0.08,'square',0.06); tone(260,0.25,'triangle',0.06,-180,0.06); if(!was) toast('¡Pelotazo en la cabeza! '+k.name+' quedó aturdido',2.2);
+    if(!k.stars){ const g=new THREE.Group(); for(let i=0;i<4;i++){ const st=new THREE.Mesh(BOX,own(new THREE.MeshBasicMaterial({color:i%2?0xffe066:0xfff3b0}))); st.scale.set(0.09,0.09,0.09); st.rotation.set(0.6,i,0.8); const a=i/4*Math.PI*2; st.position.set(Math.cos(a)*0.3,0,Math.sin(a)*0.3); g.add(st); } g.position.set(0,0.78,0); k.head.add(g); k.stars=g; } }
+  function unstun(k){ if(k.stars){ k.head.remove(k.stars); k.stars=null; } k.inner.rotation.z=0; k.head.rotation.z=0; }
   function ballNoise(b,s){ tone(180+Math.min(s,10)*25,0.07,'sine',Math.min(0.09,s*0.012));
     if(s<3.5) return; for(const k of bosses){ if(k.state==='alert'||Math.hypot(k.x-b.x,k.z-b.z)>7) continue; if(k.state!=='search') toast(k.name+' escuchó un golpe'); k.state='search'; k.t=2.5; k.lx=b.x; k.lz=b.z; } }
   function updateBalls(dt){ const pvx=(P.x-(P.px??P.x))/Math.max(dt,1e-3), pvz=(P.z-(P.pz??P.z))/Math.max(dt,1e-3); P.px=P.x; P.pz=P.z;
@@ -1444,7 +1448,9 @@ function createEngine(){
         // los jefes también son cuerpos: la pelota rebota en ellos (y se dan cuenta)
         for(const k of bosses){ if(b.y-R>1.85) continue; let dx=b.x-k.x, dz=b.z-k.z, d=Math.hypot(dx,dz), rr=0.34+R; if(d>=rr) continue;
           if(d<1e-6){ dx=1; dz=0; d=1; } dx/=d; dz/=d; b.x=k.x+dx*rr; b.z=k.z+dz*rr; const vn=b.vx*dx+b.vz*dz;
-          if(vn<0){ const hit=-vn; b.vx-=1.6*vn*dx; b.vz-=1.6*vn*dz; if(hit>1.5&&k.state!=='alert'){ tone(140,0.09,'square',0.05); toast('¡Le llegó un pelotazo a '+k.name+'!',1.8); k.state='search'; k.t=3; k.lx=b.x-b.vx*0.6; k.lz=b.z-b.vz*0.6; } } }
+          if(vn<0){ const hit=-vn, cabeza=b.y>=1.42&&b.y<=2.25; b.vx-=1.6*vn*dx; b.vz-=1.6*vn*dz;
+            if(hit>1.5&&cabeza) stunBoss(k); // pelotazo en la cabeza: aturdido 3 s
+            else if(hit>1.5&&k.state!=='alert'&&k.state!=='stun'){ tone(140,0.09,'square',0.05); toast('¡Le llegó un pelotazo a '+k.name+'!',1.8); k.state='search'; k.t=3; k.lx=b.x-b.vx*0.6; k.lz=b.z-b.vz*0.6; } } }
       }
       // el jugador la empuja al caminar contra ella
       if(b.cd<=0&&b.y<1.1){ let dx=b.x-P.x, dz=b.z-P.z, d=Math.hypot(dx,dz), rr=0.3+b.R; if(d<rr){ if(d<1e-6){ dx=-Math.sin(P.yaw); dz=-Math.cos(P.yaw); d=1; } dx/=d; dz/=d; b.x=P.x+dx*rr; b.z=P.z+dz*rr;
@@ -1457,6 +1463,11 @@ function createEngine(){
     if(b.loop) b.i=(b.i+1)%n; else { if(b.i+b.dir<0||b.i+b.dir>=n) b.dir*=-1; b.i+=b.dir; } b.state='walk'; }
   function updateBoss(b,dt,perceive){
     b.seeing=false; b.cd=Math.max(0,b.cd-dt);
+    if(b.state==='stun'){ b.t-=dt; b.susp=Math.max(0,b.susp-0.3*dt); const w=Math.sin((3-b.t)*7);
+      b.inner.rotation.z=w*0.12; b.head.rotation.z=-w*0.18; if(b.stars){ b.stars.rotation.y+=dt*5; }
+      b.legL.rotation.x=b.legR.rotation.x=0; b.armL.rotation.x=-0.25+w*0.2; b.armR.rotation.x=-0.25-w*0.2;
+      if(b.t<=0){ unstun(b); b.state='search'; b.t=1.5; b.lx=b.x+Math.sin(b.yaw); b.lz=b.z+Math.cos(b.yaw); }
+      return; } // aturdido: no se mueve, no ve ni te puede pillar
     if(perceive&&ghost){ b.susp=Math.max(0,b.susp-0.5*dt); }
     if(perceive&&!ghost){
       const d=canSee(b);
@@ -1494,7 +1505,7 @@ function createEngine(){
       const L=rayLen(tall,b.x,b.z,dx,dz,VIEW.stand), Li=rayLen(low,b.x,b.z,dx,dz,Math.min(L,VIEW.crouch));
       o.setXYZ(k+1,b.x+dx*L,0.03,b.z+dz*L); n.setXYZ(k+1,b.x+dx*Li,0.04,b.z+dz*Li); }
     o.needsUpdate=true; n.needsUpdate=true;
-    const col=b.seeing?0xff3b30:(b.susp>0.01||b.state==='search')?0xff8c2a:0xffd54a; b.cone.material.color.setHex(col); b.coneIn.material.color.setHex(col);
+    const col=b.state==='stun'?0x9aa3ab:b.seeing?0xff3b30:(b.susp>0.01||b.state==='search')?0xff8c2a:0xffd54a; b.cone.material.color.setHex(col); b.coneIn.material.color.setHex(col);
     const show=b.susp>0.01||b.state==='search'||b.state==='alert'; b.spr.visible=show;
     if(show){ const ex=b.susp>0.6; if(b.spr.material.map!==(ex?TEX_X:TEX_Q)){ b.spr.material.map=ex?TEX_X:TEX_Q; b.spr.material.needsUpdate=true; } const s=0.42+(b.seeing?Math.sin(now*0.02)*0.04:0); b.spr.scale.set(s,s,1); }
   }
@@ -1567,7 +1578,7 @@ function createEngine(){
   const api={load,start,state:()=>game.state,
     setWorking(seq,i){ if(seq===run.seq&&game.state==='play'&&LV&&found<0&&Number.isInteger(i)&&i>=0&&i<LV.obj.machines.length) working=i; },suspend(v){ suspended=v; if(v){ releaseLock(); clearKeys(); } else last=performance.now(); },
     toMenu(){ game.state='menu'; releaseLock(); document.body.classList.remove('playing','drag','crouch'); },
-    debug:{screen:screenCanvas,P,game,get bosses(){return bosses;},get solids(){return solids;},canSee,get working(){return working;}}};
+    debug:{screen:screenCanvas,P,game,get bosses(){return bosses;},get solids(){return solids;},canSee,get working(){return working;},get balls(){return balls;}}};
   return api;
 }
 
