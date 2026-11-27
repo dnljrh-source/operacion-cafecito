@@ -440,7 +440,7 @@ const TYPES={
   maquina:{kind:'point',label:'Máquina de snacks',w:1.1,d:.75,h:1.95}, refri:{kind:'point',label:'Refri',w:.75,d:.8,h:1.95},
   fotocopiadora:{kind:'point',label:'Fotocopiadora',w:1,d:.8,h:1.2}, impresora:{kind:'point',label:'Impresora',w:1.6,d:.7,h:1.1},
   cajas:{kind:'point',label:'Cajas',w:.9,d:.9,h:1.2}, tele:{kind:'point',label:'Tele',w:1.6,d:.1,h:0}, letrero:{kind:'point',label:'Letrero',w:1.4,d:.1,h:0},
-  pizarra:{kind:'point',label:'Pizarra',w:1.7,d:.6,h:1.9}, puerta:{kind:'point',label:'Puerta',w:.95,d:.06,h:0}, persona:{kind:'point',label:'Persona sentada',w:.5,d:.5,h:1.3}, extintor:{kind:'point',label:'Extintor',w:.3,d:.3,h:.75},
+  pizarra:{kind:'point',label:'Pizarra',w:1.7,d:.6,h:1.9}, puerta:{kind:'point',label:'Puerta',w:.95,d:.06,h:0}, persona:{kind:'point',label:'Persona sentada',w:.5,d:.5,h:1.3}, npc:{kind:'point',label:'NPC',w:.5,d:.5,h:0}, extintor:{kind:'point',label:'Extintor',w:.3,d:.3,h:.75},
   sofa:{kind:'rect',label:'Sofá'}, puerta_vidrio:{kind:'line',label:'Puerta de vidrio'}, puerta_real:{kind:'point',label:'Puerta (se abre)',w:1.04,d:.16,h:0}, salida:{kind:'point',label:'Puerta de emergencia',w:1.32,d:.16,h:0},
   fuego:{kind:'point',label:'Fuego',w:.9,d:.9,h:0}, zona_fuego:{kind:'rect',label:'Zona de fuego'}, wc:{kind:'point',label:'WC',w:.45,d:.72,h:.8}, lavamanos:{kind:'point',label:'Lavamanos',w:.6,d:.5,h:.9}, basurero:{kind:'point',label:'Basurero',w:.4,d:.4,h:.6}
 };
@@ -541,7 +541,7 @@ function sanitizeMap(m){
   for(const it of (Array.isArray(m.items)?m.items:[]).slice(0,900)){
     if(!it||typeof it!=='object'||!Object.prototype.hasOwnProperty.call(TYPES,it.t)) continue;
     const T=TYPES[it.t];
-    if(T.kind==='point'){ const o={t:it.t,x:X(it.x),z:Z(it.z),r:normR(it.r)}; if(it.t==='letrero') o.text=String(it.text||'LETRERO').slice(0,22); if(it.t==='puerta'&&it.text) o.text=String(it.text).slice(0,12); out.items.push(o); continue; }
+    if(T.kind==='point'){ const o={t:it.t,x:X(it.x),z:Z(it.z),r:normR(it.r)}; if(it.t==='letrero') o.text=String(it.text||'LETRERO').slice(0,22); if(it.t==='puerta'&&it.text) o.text=String(it.text).slice(0,12); if(it.t==='npc') o.anim=['espera','conversa','baila'].includes(it.anim)?it.anim:'espera'; out.items.push(o); continue; }
     const o={t:it.t,x0:X(it.x0),z0:Z(it.z0),x1:X(it.x1),z1:Z(it.z1)};
     if(T.kind==='line'){ const q=lineSnap({x:o.x0,z:o.z0},{x:o.x1,z:o.z1},2); o.x1=q.x; o.z1=q.z; if(it.t==='puerta_vidrio'){ if(Math.abs(o.x1-o.x0)>=Math.abs(o.z1-o.z0)) o.z1=o.z0; else o.x1=o.x0; } if(Math.hypot(o.x1-o.x0,o.z1-o.z0)<0.05){ o.x1=r2(o.x0+(o.x1>=o.x0?0.05:-0.05)); o.z1=o.z0; } }
     else { if(Math.abs(o.x1-o.x0)<0.05) o.x1=r2(Math.min(o.x0,o.x1)+0.05); if(Math.abs(o.z1-o.z0)<0.05) o.z1=r2(Math.min(o.z0,o.z1)+0.05); }
@@ -639,6 +639,7 @@ function layout(map){
     const [w,d]=fpOf(T.w,T.d,it.r), yaw=dirToYaw(it.r);
     if(it.t==='puerta_real'||it.t==='salida'){ const [lw,ld]=fpOf(it.t==='salida'?1.2:0.92,0.07,it.r); S(it.x,it.z,lw,ld,2.2,it.t==='salida'?'exit':'door'); solids[solids.length-1].door=true;
       props.push({k:it.t,x:it.x,z:it.z,yaw,r:it.r,sid:solids.length-1}); return; }
+    if(it.t==='npc'){ props.push({k:'npc',x:it.x,z:it.z,yaw,anim:it.anim||'espera',seed:idx}); return; }
     if(it.t==='fuego'){ S(it.x,it.z,0.9,0.9,0.5,'fire',false); props.push({k:'fuego',x:it.x,z:it.z,w:0.9,d:0.9,seed:idx}); return; } // no se puede pisar, pero no tapa la vista
     if(it.t==='wc'||it.t==='lavamanos'||it.t==='basurero'){ S(it.x,it.z,w,d,T.h,'fixture'); props.push({k:it.t,x:it.x,z:it.z,yaw,r:it.r}); return; }
     if(T.h>0) S(it.x,it.z,w,d,T.h,it.t==='planta'||it.t==='planta_alta'?'plant':it.t==='persona'?'person':T.h>=1.8?'tall':T.h>=1.05?'mid':'low');
@@ -647,6 +648,12 @@ function layout(map){
   const o=map.obj;
   if(o.capsule){ const [w,d]=fpOf(0.8,0.45,o.capsule.r); S(o.capsule.x,o.capsule.z,w,d,0.9,'obj'); props.push({k:'capsule',x:o.capsule.x,z:o.capsule.z,yaw:dirToYaw(o.capsule.r)}); }
   o.machines.forEach((q,i)=>{ const [w,d]=fpOf(1.2,0.65,q.r); S(q.x,q.z,w,d,0.92,'obj'); props.push({k:'machine',x:q.x,z:q.z,yaw:dirToYaw(q.r),idx:i}); });
+  // NPC: si está sobre (o junto a) una silla libre se sienta en ella, mirando al escritorio; si no, queda de pie
+  { const chairs=props.filter(q=>q.k==='chair'), busy=props.filter(q=>q.k==='worker'), taken=new Set();
+    for(const n of props.filter(q=>q.k==='npc')){ let best=null, bd=0.75;
+      for(const c of chairs){ if(taken.has(c)) continue; if(busy.some(w=>Math.hypot(w.x-c.x,w.z-c.z)<0.15)) continue; const dd=Math.hypot(c.x-n.x,c.z-n.z); if(dd<bd){ bd=dd; best=c; } }
+      if(best){ taken.add(best); n.seated=true; n.x=best.x; n.z=best.z; n.yaw=best.yaw; S(n.x,n.z,0.6,0.6,1.3,'person'); }
+      else S(n.x,n.z,0.5,0.5,1.75,'person'); } }
   // el escritorio es el punto de inicio: no se arma un mueble aparte
   return {size:{w:W,d:D},solids,props,start:map.start,obj:map.obj,bosses:map.bosses,estilo:loft?'loft':'clasico'};
 }
@@ -980,7 +987,7 @@ function createEngine(){
   function shelfBoxes(g,len,alongZ,sd){ let k=0; for(let i=0;i<len*2;i++) for(const y of [0.07,0.72,1.37]){ k++; if(hrand(sd,i,k)<0.35) continue;
       const off=-len/2+0.3+i*0.5; if(off>len/2-0.2) continue; const bw=0.3+hrand(sd,k,1)*0.12, bh=0.25+hrand(sd,k,2)*0.25;
       box([0xc9a46b,0xb88d55,0xdedad0,0x8fb3c9][i%4],alongZ?0.36:bw,bh,alongZ?bw:0.36,alongZ?0:off,y+bh/2,alongZ?off:0,g); } }
-  let machineLeds=[], doors=[], alarm=null, navG=null, fires=[];
+  let machineLeds=[], doors=[], alarm=null, navG=null, fires=[], npcs=[];
   function buildProp(p,L){
     switch(p.k){
       case 'floor': floorPlane(p.mat,p.w,p.d,p.x,p.z,0.006+Math.min(p.order,200)*0.00005); break;
@@ -1092,6 +1099,10 @@ function createEngine(){
         cyl(0x7d8590,0.06,0.42,0.06,0,0.24,0,g); box(0x50565f,0.5,0.04,0.08,0,0.03,0,g); box(0x50565f,0.08,0.04,0.5,0,0.03,0,g); break; }
       case 'persona': { buildProp({k:'chair',x:p.x,z:p.z,yaw:p.yaw},L); const w=person({skin:0xe7b994,top:0xa8456a,pants:0x2f3340,hairC:0x3b2418,hair:'long',shirt:0xf3ece6});
         w.g.position.set(p.x,0.5-0.9*0.92,p.z); w.inner.scale.setScalar(0.92); w.g.rotation.y=p.yaw; w.legL.rotation.x=w.legR.rotation.x=-Math.PI/2; w.armL.rotation.x=w.armR.rotation.x=-1.1; workers.push(w); break; }
+      case 'npc': { const i=p.seed||0, w=person({skin:[0xf1c9a5,0xd9a37e,0xb07c57,0x8d5a3b][i%4],top:[0x4a90b8,0xc0504d,0x6aa86d,0xe2b93b,0x8e6ac8,0x2f6f73][i%6],pants:[0x3d4452,0x2a2f3a,0x6b5a45][i%3],hairC:[0x3b2a20,0x1c1b1f,0x8a5a2b,0xc8a15a][i%4],hair:['top','long','bun','bald'][i%4],glasses:i%5===2,beard:i%7===3});
+        if(p.seated){ w.g.position.set(p.x,0.5-0.9*0.92,p.z); w.inner.scale.setScalar(0.92); w.g.rotation.y=p.yaw; w.legL.rotation.x=w.legR.rotation.x=-Math.PI/2; w.armL.rotation.x=w.armR.rotation.x=-1.1; workers.push(w); }
+        else { w.g.position.set(p.x,0,p.z); w.g.rotation.y=p.yaw; npcs.push({w,anim:p.anim,ph:i*1.37,yaw:p.yaw,x:p.x,z:p.z}); }
+        break; }
       case 'worker': { const i=workers.length, w=person({skin:[0xf1c9a5,0xd9a37e,0xb07c57][i%3],top:[0x5aa469,0xd17a3f,0x6d6aa8,0xe2b93b,0x4a90b8][i%5],pants:0x3d4452,hairC:[0x3b2a20,0x1c1b1f,0x8a5a2b][i%3],hair:i%2?'top':'long'});
         w.g.position.set(p.x,0.5-0.9*0.92,p.z); w.inner.scale.setScalar(0.92); w.g.rotation.y=p.yaw; w.legL.rotation.x=w.legR.rotation.x=-Math.PI/2; w.armL.rotation.x=w.armR.rotation.x=-1.1; workers.push(w); break; }
       case 'table': box(0xcfae84,p.w,0.05,p.d,p.x,0.74,p.z); for(const sx of [-1,1]) for(const sz of [-1,1]) box(0x6b5440,0.07,0.72,0.07,p.x+sx*(p.w/2-0.1),0.36,p.z+sz*(p.d/2-0.1)); break;
@@ -1157,7 +1168,7 @@ function createEngine(){
     root.traverse(o=>{ if(o.geometry&&!shared.has(o.geometry)) o.geometry.dispose(); const m=o.material; if(m&&m.userData&&m.userData.own){ if(m.map&&!m.userData.keepMap) m.map.dispose(); m.dispose(); } });
     root=null; }
   function buildLevel(map){
-    clearLevel(); root=new THREE.Group(); scene.add(root); signs.length=0; workers=[]; machineLeds=[]; doors=[]; alarm=null; navG=null; fires=[]; seed=11;
+    clearLevel(); root=new THREE.Group(); scene.add(root); signs.length=0; workers=[]; machineLeds=[]; doors=[]; alarm=null; navG=null; fires=[]; npcs=[]; seed=11;
     LV=layout(map); solids=LV.solids; tall=solids.filter(s=>s.blocks&&s.h>=1.8); low=solids.filter(s=>s.blocks&&s.h>=1.1);
     const W=LV.size.w, D=LV.size.d, hx=W/2, hz=D/2, big=Math.max(W,D);
     loft=LV.estilo==='loft'; WALL=loft?0xf0efeb:0xebe5d9; CORE=loft?0x76797c:WALL;
@@ -1482,6 +1493,11 @@ function createEngine(){
       if(game.state==='play'){ updatePlayer(dt); game.time+=dt; if(game.time>=run.next){ rec(); run.next=game.time+0.25; } }
       if(game.state==='play'||game.state==='menu') for(const b of bosses) updateBoss(b,dt,game.state==='play');
       for(const b of bosses) drawBoss(b,now);
+      for(const n of npcs){ const t=now/1000+n.ph, w=n.w;
+        if(n.anim==='baila'){ const b=t*6.2; w.g.position.y=Math.abs(Math.sin(b))*0.12; w.inner.rotation.y=Math.sin(b*0.5)*0.35; w.inner.rotation.z=Math.sin(b)*0.06;
+          w.armL.rotation.x=-2.6+Math.sin(b)*0.5; w.armR.rotation.x=-2.6-Math.sin(b)*0.5; w.armL.rotation.z=-0.3; w.armR.rotation.z=0.3; w.legL.rotation.x=Math.max(0,Math.sin(b))*-0.5; w.legR.rotation.x=Math.max(0,-Math.sin(b))*-0.5; w.head.rotation.x=Math.sin(b)*0.15; }
+        else if(n.anim==='conversa'){ w.armR.rotation.x=-0.5-0.45*(0.5+0.5*Math.sin(t*3.1)); w.armR.rotation.z=0.15+0.15*Math.sin(t*2.3); w.armL.rotation.x=-0.25-0.2*(0.5+0.5*Math.sin(t*2.2+1)); w.head.rotation.x=Math.sin(t*4.4)*0.08; w.head.rotation.y=Math.sin(t*0.9)*0.3; w.inner.rotation.y=Math.sin(t*0.7)*0.1; }
+        else { w.inner.rotation.z=Math.sin(t*0.9)*0.035; w.head.rotation.y=Math.sin(t*0.45)*0.6; w.head.rotation.x=0.05+Math.sin(t*0.3)*0.05; w.armL.rotation.x=Math.sin(t*0.9)*0.05; w.armR.rotation.x=-0.1+Math.sin(t*0.9+1)*0.05; w.armR.rotation.z=0.06; w.inner.position.y=Math.sin(t*1.8)*0.008; } } // espera: balanceo y mira alrededor
       workers.forEach((w,i)=>{ const t=now*0.012+i*1.7; w.armL.rotation.x=-1.1+Math.sin(t)*0.08; w.armR.rotation.x=-1.1+Math.cos(t*1.3)*0.08; w.head.rotation.y=Math.sin(now*0.0004+i)*0.25; });
       const tg=STEPS.length?STEPS[curStep()].targets():[], showM=game.state==='play'||game.state==='pause';
       markers.forEach((m,i)=>{ const ob=tg[i]; if(!ob||!showM){ m.visible=false; return; } m.position.set(ob.x,ob.y+Math.sin(now*0.004+i)*0.08,ob.z); m.rotation.y=now*0.002; m.visible=Math.hypot(ob.x-P.x,ob.z-P.z)>2.2; });
@@ -1774,7 +1790,7 @@ const TOOLS=[
   {g:'Objetos',id:'dispensador',label:'Dispensador',kind:'point',t:'dispensador',c:'#8fa3b8'},{g:'Objetos',id:'maquina',label:'Máquina de snacks',kind:'point',t:'maquina',c:'#3f4855'},
   {g:'Objetos',id:'refri',label:'Refri',kind:'point',t:'refri',c:'#3f4855'},{g:'Objetos',id:'fotocopiadora',label:'Fotocopiadora',kind:'point',t:'fotocopiadora',c:'#8fa3b8'},
   {g:'Objetos',id:'impresora',label:'Impresora',kind:'point',t:'impresora',c:'#8fa3b8'},{g:'Objetos',id:'cajas',label:'Cajas',kind:'point',t:'cajas',c:'#8fa3b8'},
-  {g:'Objetos',id:'tele',label:'Tele',kind:'point',t:'tele',c:'#5aa7d8'},{g:'Objetos',id:'persona',label:'Persona sentada',kind:'point',t:'persona',c:'#d98e5f'},{g:'Objetos',id:'puerta',label:'Puerta',kind:'point',t:'puerta',c:'#b98a5e'},{g:'Objetos',id:'pizarra',label:'Pizarra',kind:'point',t:'pizarra',c:'#e9edf0'},{g:'Objetos',id:'extintor',label:'Extintor',kind:'point',t:'extintor',c:'#d0312d'},{g:'Objetos',id:'fuego',label:'Fuego',kind:'point',t:'fuego',c:'#ff7a1a'},{g:'Objetos',id:'zona_fuego',label:'Zona de fuego',kind:'rect',t:'zona_fuego',c:'#ff5a1f'},{g:'Objetos',id:'letrero',label:'Letrero',kind:'point',t:'letrero',c:'#2b3442'},
+  {g:'Objetos',id:'tele',label:'Tele',kind:'point',t:'tele',c:'#5aa7d8'},{g:'Objetos',id:'persona',label:'Persona sentada',kind:'point',t:'persona',c:'#d98e5f'},{g:'Objetos',id:'npc',label:'NPC',kind:'point',t:'npc',c:'#e8a05c'},{g:'Objetos',id:'puerta',label:'Puerta',kind:'point',t:'puerta',c:'#b98a5e'},{g:'Objetos',id:'pizarra',label:'Pizarra',kind:'point',t:'pizarra',c:'#e9edf0'},{g:'Objetos',id:'extintor',label:'Extintor',kind:'point',t:'extintor',c:'#d0312d'},{g:'Objetos',id:'fuego',label:'Fuego',kind:'point',t:'fuego',c:'#ff7a1a'},{g:'Objetos',id:'zona_fuego',label:'Zona de fuego',kind:'rect',t:'zona_fuego',c:'#ff5a1f'},{g:'Objetos',id:'letrero',label:'Letrero',kind:'point',t:'letrero',c:'#2b3442'},
   {g:'Puertas y baño',id:'puerta_real',label:'Puerta (se abre)',kind:'point',t:'puerta_real',c:'#b98a5e'},{g:'Puertas y baño',id:'puerta_vidrio',label:'Puerta de vidrio',kind:'line',t:'puerta_vidrio',c:'#9fd8ff'},{g:'Puertas y baño',id:'salida',label:'Puerta de emergencia',kind:'point',t:'salida',c:'#2e9e5b'},
   {g:'Puertas y baño',id:'wc',label:'WC',kind:'point',t:'wc',c:'#e9eef2'},{g:'Puertas y baño',id:'lavamanos',label:'Lavamanos',kind:'point',t:'lavamanos',c:'#e9eef2'},{g:'Puertas y baño',id:'basurero',label:'Basurero',kind:'point',t:'basurero',c:'#8a929b'},
   {g:'Objetivos',id:'o_start',label:'Inicio y tu escritorio',kind:'obj',key:'start',c:'#5fd3c3'},{g:'Objetivos',id:'o_cap',label:'Cápsula',kind:'obj',key:'capsule',c:'#5fd3c3'},
@@ -2156,6 +2172,10 @@ function buildPanel(){
       sec.append(rangeField('Compañeros sentados',0,1,0.05,o.gente??0.25,v=>Math.round(v*100)+'%',v=>{ o.gente=v; })); }
     if(o.t==='letrero'){ const inp=el('input',{maxlength:'22',value:o.text||''}); inp.addEventListener('focus',()=>snapshot()); inp.addEventListener('input',()=>{ o.text=inp.value.toUpperCase().slice(0,22); recompute(); scheduleSave(); draw(); });
       sec.append(el('label',{class:'f'},['Texto',inp])); }
+    if(o.t==='npc'){ const L=E.L&&E.L.props.find(q=>q.k==='npc'&&q.seed===s.i), sel=el('select',{}); for(const [v,t] of [['espera','Esperando'],['conversa','Conversando'],['baila','Bailando']]){ const op=el('option',{value:v,text:t}); if((o.anim||'espera')===v) op.selected=true; sel.append(op); }
+      sel.addEventListener('change',()=>{ snapshot(); o.anim=sel.value; changed(); });
+      sec.append(el('p',{text:L&&L.seated?'Está sentado en una silla: queda trabajando en su escritorio. Muévelo lejos de las sillas para que quede de pie.':'Está de pie. Si lo pones sobre una silla (de un escritorio o cubículo) se sienta solo.'}));
+      if(!(L&&L.seated)) sec.append(el('label',{class:'f'},['Qué hace de pie',sel])); }
     if(T.kind==='point') sec.append(posFields(o)); if(T.kind==='rect') sec.append(rectFields(o)); if(T.kind==='line') sec.append(lineFields(o));
     if(T.kind==='point') sec.append(el('div',{class:'row'},[el('span',{text:(o.t==='salida'?'El letrero SALIDA mira hacia el ':'Mira hacia el ')+dirName(o.r),style:'font-size:14px;color:#c3cad4'}),el('button',{class:'ghost sm',text:'Girar 90°',onclick:()=>rotateSel(1)})]));
     if(o.t==='tele'||o.t==='letrero') sec.append(el('p',{text:'Se pega solo al muro que tenga detrás. Que mire hacia donde estará quien lo lea.'}));
