@@ -422,7 +422,7 @@ const TYPES={
   cajas:{kind:'point',label:'Cajas',w:.9,d:.9,h:1.2}, tele:{kind:'point',label:'Tele',w:1.6,d:.1,h:0}, letrero:{kind:'point',label:'Letrero',w:1.4,d:.1,h:0},
   pizarra:{kind:'point',label:'Pizarra',w:1.7,d:.6,h:1.9}, puerta:{kind:'point',label:'Puerta',w:.95,d:.06,h:0}, persona:{kind:'point',label:'Persona sentada',w:.5,d:.5,h:1.3}, extintor:{kind:'point',label:'Extintor',w:.3,d:.3,h:.75},
   sofa:{kind:'rect',label:'Sofá'}, puerta_vidrio:{kind:'line',label:'Puerta de vidrio'}, puerta_real:{kind:'point',label:'Puerta (se abre)',w:1.04,d:.16,h:0}, salida:{kind:'point',label:'Puerta de emergencia',w:1.32,d:.16,h:0},
-  wc:{kind:'point',label:'WC',w:.45,d:.72,h:.8}, lavamanos:{kind:'point',label:'Lavamanos',w:.6,d:.5,h:.9}, basurero:{kind:'point',label:'Basurero',w:.4,d:.4,h:.6}
+  fuego:{kind:'point',label:'Fuego',w:.8,d:.8,h:0}, wc:{kind:'point',label:'WC',w:.45,d:.72,h:.8}, lavamanos:{kind:'point',label:'Lavamanos',w:.6,d:.5,h:.9}, basurero:{kind:'point',label:'Basurero',w:.4,d:.4,h:.6}
 };
 const OBJ_LABEL={start:'Inicio y tu escritorio',capsule:'Cápsula',machine:'Cafetera',desk:'Tu escritorio'};
 
@@ -618,6 +618,7 @@ function layout(map){
     const [w,d]=fpOf(T.w,T.d,it.r), yaw=dirToYaw(it.r);
     if(it.t==='puerta_real'||it.t==='salida'){ const [lw,ld]=fpOf(it.t==='salida'?1.2:0.92,0.07,it.r); S(it.x,it.z,lw,ld,2.2,it.t==='salida'?'exit':'door'); solids[solids.length-1].door=true;
       props.push({k:it.t,x:it.x,z:it.z,yaw,r:it.r,sid:solids.length-1}); return; }
+    if(it.t==='fuego'){ S(it.x,it.z,0.7,0.7,0.5,'fire',false); props.push({k:'fuego',x:it.x,z:it.z,yaw,seed:idx}); return; } // no se puede pisar, pero no tapa la vista
     if(it.t==='wc'||it.t==='lavamanos'||it.t==='basurero'){ S(it.x,it.z,w,d,T.h,'fixture'); props.push({k:it.t,x:it.x,z:it.z,yaw,r:it.r}); return; }
     if(T.h>0) S(it.x,it.z,w,d,T.h,it.t==='planta'||it.t==='planta_alta'?'plant':it.t==='persona'?'person':T.h>=1.8?'tall':T.h>=1.05?'mid':'low');
     props.push({k:it.t,x:it.x,z:it.z,yaw,r:it.r,text:it.text});
@@ -766,7 +767,8 @@ function createEngine(){
   const M=c=>{ if(!matCache.has(c)) matCache.set(c,new THREE.MeshToonMaterial({color:c,gradientMap:grad})); return matCache.get(c); };
   const MB=c=>{ if(!basicCache.has(c)) basicCache.set(c,new THREE.MeshBasicMaterial({color:c})); return basicCache.get(c); };
   const own=m=>{ m.userData.own=true; return m; };
-  const BOX=new THREE.BoxGeometry(1,1,1), CYL=new THREE.CylinderGeometry(0.5,0.5,1,12), shared=new Set([BOX,CYL]);
+  const BOX=new THREE.BoxGeometry(1,1,1), CYL=new THREE.CylinderGeometry(0.5,0.5,1,12), CONE=new THREE.ConeGeometry(0.5,1,10,1,true), shared=new Set([BOX,CYL,CONE]);
+  let SMOKE_TX=null; function smokeTex(){ if(SMOKE_TX) return SMOKE_TX; const c=document.createElement('canvas'); c.width=c.height=64; const q=c.getContext('2d'), g=q.createRadialGradient(32,32,2,32,32,30); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(1,'rgba(255,255,255,0)'); q.fillStyle=g; q.fillRect(0,0,64,64); SMOKE_TX=new THREE.CanvasTexture(c); return SMOKE_TX; }
   let root=null;
   function mk(geo,mat,w,h,d,x,y,z,parent,ns){ const m=new THREE.Mesh(geo,mat); m.scale.set(w,h,d); m.position.set(x,y,z); m.castShadow=!ns; m.receiveShadow=true; (parent||root).add(m); return m; }
   const box=(c,w,h,d,x,y,z,p,ns)=>mk(BOX,typeof c==='number'?M(c):c,w,h,d,x,y,z,p,ns);
@@ -951,7 +953,7 @@ function createEngine(){
   function shelfBoxes(g,len,alongZ,sd){ let k=0; for(let i=0;i<len*2;i++) for(const y of [0.07,0.72,1.37]){ k++; if(hrand(sd,i,k)<0.35) continue;
       const off=-len/2+0.3+i*0.5; if(off>len/2-0.2) continue; const bw=0.3+hrand(sd,k,1)*0.12, bh=0.25+hrand(sd,k,2)*0.25;
       box([0xc9a46b,0xb88d55,0xdedad0,0x8fb3c9][i%4],alongZ?0.36:bw,bh,alongZ?bw:0.36,alongZ?0:off,y+bh/2,alongZ?off:0,g); } }
-  let machineLeds=[], doors=[], alarm=null, navG=null;
+  let machineLeds=[], doors=[], alarm=null, navG=null, fires=[];
   function buildProp(p,L){
     switch(p.k){
       case 'floor': floorPlane(p.mat,p.w,p.d,p.x,p.z,0.006+Math.min(p.order,200)*0.00005); break;
@@ -1021,6 +1023,15 @@ function createEngine(){
           for(const sz of [-1,1]) box(0xd6d9dc,0.03,0.5,0.03,-sd*(lw-0.12),1.05,sz*0.05,piv,true);
           pivs.push({p:piv,s:-sd}); }
         doors.push({pivs,ex:false,glass:true,sid:p.sid,x:p.x,z:p.z,yaw:p.yaw,len,ang:0,target:0,open:false,hold:0}); break; }
+      case 'fuego': { const g=group(p.x,p.z,p.yaw);
+        for(const a of [0.5,-0.6,1.6]) { const l=box(0x5a3a22,0.75,0.12,0.14,0,0.08,0,g); l.rotation.y=a; }
+        const emb=new THREE.Mesh(CYL,own(new THREE.MeshBasicMaterial({color:0xff5a1f}))); emb.scale.set(0.55,0.03,0.55); emb.position.set(0,0.16,0); g.add(emb);
+        const fl=[], cols=[0xffe066,0xffb02e,0xff7a1a,0xff5a1f,0xffd23f,0xff8c2e];
+        for(let i=0;i<6;i++){ const m=new THREE.Mesh(CONE,own(new THREE.MeshBasicMaterial({color:cols[i],transparent:true,opacity:0.85,depthWrite:false,blending:THREE.AdditiveBlending}))); const a=i*1.05, r=i?0.14:0;
+          m.position.set(Math.cos(a)*r,0.4,Math.sin(a)*r); m.renderOrder=4; g.add(m); fl.push({m,b:i?0.28:0.38,h:i?0.55:0.8,ph:i*1.7+p.seed}); }
+        const smoke=[]; for(let i=0;i<9;i++){ const sp=new THREE.Sprite(own(new THREE.SpriteMaterial({map:smokeTex(),color:0x6d6d6d,transparent:true,opacity:0,depthWrite:false}))); sp.material.userData.keepMap=true; g.add(sp); smoke.push({sp,t:i/9}); }
+        const light=new THREE.PointLight(0xff8a3a,1.1,6,2); light.position.set(0,0.9,0); g.add(light);
+        fires.push({fl,smoke,light,seed:p.seed}); break; }
       case 'wc': { const g=group(p.x,p.z,p.yaw), W=0xf4f6f7;
         cyl(W,0.3,0.36,0.34,0,0.18,0.08,g); cyl(W,0.4,0.06,0.48,0,0.39,0.1,g); box(0xe7eaec,0.38,0.03,0.44,0,0.43,0.1,g,true);
         box(W,0.44,0.4,0.2,0,0.62,-0.24,g); box(0xe7eaec,0.47,0.04,0.22,0,0.84,-0.24,g,true); box(0xb8c0c7,0.07,0.025,0.03,0.12,0.87,-0.2,g,true); break; }
@@ -1119,7 +1130,7 @@ function createEngine(){
     root.traverse(o=>{ if(o.geometry&&!shared.has(o.geometry)) o.geometry.dispose(); const m=o.material; if(m&&m.userData&&m.userData.own){ if(m.map&&!m.userData.keepMap) m.map.dispose(); m.dispose(); } });
     root=null; }
   function buildLevel(map){
-    clearLevel(); root=new THREE.Group(); scene.add(root); signs.length=0; workers=[]; machineLeds=[]; doors=[]; alarm=null; navG=null; seed=11;
+    clearLevel(); root=new THREE.Group(); scene.add(root); signs.length=0; workers=[]; machineLeds=[]; doors=[]; alarm=null; navG=null; fires=[]; seed=11;
     LV=layout(map); solids=LV.solids; tall=solids.filter(s=>s.blocks&&s.h>=1.8); low=solids.filter(s=>s.blocks&&s.h>=1.1);
     const W=LV.size.w, D=LV.size.d, hx=W/2, hz=D/2, big=Math.max(W,D);
     loft=LV.estilo==='loft'; WALL=loft?0xf0efeb:0xebe5d9; CORE=loft?0x76797c:WALL;
@@ -1432,6 +1443,9 @@ function createEngine(){
     const dt=Math.min(0.066,Math.max(0,(now-last)/1000)); last=now;
     if(suspended||!root) return;
     try{
+      { const t=now/1000; for(const f of fires){ for(const q of f.fl){ const k=1+0.22*Math.sin(t*9+q.ph)+0.12*Math.sin(t*23+q.ph*2); q.m.scale.set(q.b*(1.1-0.15*k),q.h*k,q.b*(1.1-0.15*k)); q.m.position.y=0.18+q.h*k/2; q.m.rotation.y=t*0.8+q.ph; }
+        f.light.intensity=0.9+0.35*Math.sin(t*13+f.seed)+0.15*Math.sin(t*31);
+        for(const s of f.smoke){ s.t=(s.t+dt*0.28)%1; const u=s.t; s.sp.position.set(Math.sin(u*6+s.t*9)*0.18*u,0.9+u*2.1,Math.cos(u*5)*0.15*u); const sc=0.35+u*1.1; s.sp.scale.set(sc,sc,1); s.sp.material.opacity=Math.min(1,u*5)*(1-u)*0.45; } } }
       for(const d of doors){ if(!d.held&&!d.open&&d.hold>0) d.hold=Math.max(0,d.hold-dt*1.5); d.ang+=(d.target-d.ang)*Math.min(1,dt*7); if(d.piv) d.piv.rotation.y=d.ang; if(d.pivs) for(const q of d.pivs) q.p.rotation.y=d.ang*q.s; }
       if(alarm&&game.state==='play'){ alarm.t+=dt; if(alarm.t<8&&alarm.t>=alarm.next){ alarm.hi=!alarm.hi; sfx.siren(alarm.hi); alarm.next=alarm.t+0.45; } document.body.classList.toggle('alarm',alarm.t<8&&Math.floor(alarm.t*2.2)%2===0); } else document.body.classList.remove('alarm');
       if(game.state==='play'){ updatePlayer(dt); game.time+=dt; if(game.time>=run.next){ rec(); run.next=game.time+0.25; } }
@@ -1696,7 +1710,7 @@ const TOOLS=[
   {g:'Objetos',id:'dispensador',label:'Dispensador',kind:'point',t:'dispensador',c:'#8fa3b8'},{g:'Objetos',id:'maquina',label:'Máquina de snacks',kind:'point',t:'maquina',c:'#3f4855'},
   {g:'Objetos',id:'refri',label:'Refri',kind:'point',t:'refri',c:'#3f4855'},{g:'Objetos',id:'fotocopiadora',label:'Fotocopiadora',kind:'point',t:'fotocopiadora',c:'#8fa3b8'},
   {g:'Objetos',id:'impresora',label:'Impresora',kind:'point',t:'impresora',c:'#8fa3b8'},{g:'Objetos',id:'cajas',label:'Cajas',kind:'point',t:'cajas',c:'#8fa3b8'},
-  {g:'Objetos',id:'tele',label:'Tele',kind:'point',t:'tele',c:'#5aa7d8'},{g:'Objetos',id:'persona',label:'Persona sentada',kind:'point',t:'persona',c:'#d98e5f'},{g:'Objetos',id:'puerta',label:'Puerta',kind:'point',t:'puerta',c:'#b98a5e'},{g:'Objetos',id:'pizarra',label:'Pizarra',kind:'point',t:'pizarra',c:'#e9edf0'},{g:'Objetos',id:'extintor',label:'Extintor',kind:'point',t:'extintor',c:'#d0312d'},{g:'Objetos',id:'letrero',label:'Letrero',kind:'point',t:'letrero',c:'#2b3442'},
+  {g:'Objetos',id:'tele',label:'Tele',kind:'point',t:'tele',c:'#5aa7d8'},{g:'Objetos',id:'persona',label:'Persona sentada',kind:'point',t:'persona',c:'#d98e5f'},{g:'Objetos',id:'puerta',label:'Puerta',kind:'point',t:'puerta',c:'#b98a5e'},{g:'Objetos',id:'pizarra',label:'Pizarra',kind:'point',t:'pizarra',c:'#e9edf0'},{g:'Objetos',id:'extintor',label:'Extintor',kind:'point',t:'extintor',c:'#d0312d'},{g:'Objetos',id:'fuego',label:'Fuego',kind:'point',t:'fuego',c:'#ff7a1a'},{g:'Objetos',id:'letrero',label:'Letrero',kind:'point',t:'letrero',c:'#2b3442'},
   {g:'Puertas y baño',id:'puerta_real',label:'Puerta (se abre)',kind:'point',t:'puerta_real',c:'#b98a5e'},{g:'Puertas y baño',id:'puerta_vidrio',label:'Puerta de vidrio',kind:'line',t:'puerta_vidrio',c:'#9fd8ff'},{g:'Puertas y baño',id:'salida',label:'Puerta de emergencia',kind:'point',t:'salida',c:'#2e9e5b'},
   {g:'Puertas y baño',id:'wc',label:'WC',kind:'point',t:'wc',c:'#e9eef2'},{g:'Puertas y baño',id:'lavamanos',label:'Lavamanos',kind:'point',t:'lavamanos',c:'#e9eef2'},{g:'Puertas y baño',id:'basurero',label:'Basurero',kind:'point',t:'basurero',c:'#8a929b'},
   {g:'Objetivos',id:'o_start',label:'Inicio y tu escritorio',kind:'obj',key:'start',c:'#5fd3c3'},{g:'Objetivos',id:'o_cap',label:'Cápsula',kind:'obj',key:'capsule',c:'#5fd3c3'},
@@ -2126,7 +2140,7 @@ function buildBossPanel(){
 }
 
 /* dibujo del plano */
-const SOLID_COL={win:'#7fb6d6',wall:'#3f4855',tall:'#3f4855',glass:'#9fd8ff',part:'#8fa3b8',mid:'#8fa3b8',low:'#c9a77a',plant:'#4f9a58',person:'#d98e5f',obj:'#5fd3c3',sofa:'#7a4b2a',door:'#b98a5e',exit:'#2e9e5b',glassdoor:'#9fd8ff',fixture:'#e9eef2'};
+const SOLID_COL={win:'#7fb6d6',wall:'#3f4855',tall:'#3f4855',glass:'#9fd8ff',part:'#8fa3b8',mid:'#8fa3b8',low:'#c9a77a',plant:'#4f9a58',person:'#d98e5f',obj:'#5fd3c3',sofa:'#7a4b2a',door:'#b98a5e',exit:'#2e9e5b',glassdoor:'#9fd8ff',fire:'#ff7a1a',fixture:'#e9eef2'};
 const FLOOR_COL={baldosa:'#d9d1bf',madera:'#a5774f',cemento:'#9c988f',alfombra:'#77716a'};
 let drawQ=false;
 function draw(){ if(drawQ) return; drawQ=true; requestAnimationFrame(()=>{ drawQ=false; try{ paint(); }catch(e){ console.error(e); } }); }
