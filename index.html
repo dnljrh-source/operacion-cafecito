@@ -299,9 +299,10 @@ body.editing #editor{display:grid}
 
 <div id="rank" class="screen">
   <div class="card wide">
-    <h2 class="big">Ranking</h2>
-    <p class="brief">Los 10 mejores tiempos de cada mapa. Cuenta solo el mejor de cada persona. Toca una fila para ver su recorrido.</p>
-    <label class="msel">Mapa <select id="rMap" aria-label="Mapa del ranking"></select></label>
+    <h2 class="big" id="rTitle">Ranking</h2>
+    <p class="brief" id="rBrief">Los 10 mejores tiempos de cada mapa. Cuenta solo el mejor de cada persona. Toca una fila para ver su recorrido.</p>
+    <label class="msel" id="rMapRow">Mapa <select id="rMap" aria-label="Mapa del ranking"></select></label>
+    <div class="row" id="rPastRow" hidden style="margin:0 0 12px"><button id="rPast" class="ghost sm">Ver días anteriores</button><label class="msel" id="rPastPick" hidden style="margin:0">Día <select id="rPastSel" aria-label="Día del ranking"></select></label></div>
     <div class="rscroll"><table class="rtable"><thead><tr><th class="n">#</th><th>Nombre</th><th class="n">Tiempo</th><th class="n">Visto</th><th>Nota</th><th>Fecha</th></tr></thead><tbody id="rBody"></tbody></table></div>
     <div class="routeBox" id="rRouteBox" hidden><canvas id="rRoute" aria-label="Plano con el recorrido"></canvas><div class="routeCap" id="rRouteCap"></div></div>
     <p id="rMsg" role="status" style="margin:0 0 14px"></p>
@@ -1686,8 +1687,9 @@ $('wSave').addEventListener('click',async()=>{
   }catch(e){ $('wMsg').textContent=netMsg(e); $('wSave').hidden=false; $('wSave').disabled=false; }
   saving=false;
 });
+const RK={past:false,mapa:'',fecha:'',dias:[]};
 async function loadRank(){
-  const m=$('rMap').value; $('rMsg').textContent='Cargando…'; $('rBody').textContent='';
+  const m=PAGE==='daily'?RK.mapa:$('rMap').value; if(!m){ $('rBody').textContent=''; $('rMsg').textContent='Hoy no hay daily programado.'; return; } $('rMsg').textContent='Cargando…'; $('rBody').textContent='';
   try{ const list=await bestList(m); fillRows($('rBody'),list.slice(0,10),myName?{n:myName,t:-1}:null,true,r=>showRemoteRoute(r,m,'r')); $('rRouteBox').hidden=true;
     if(myName){ const pos=list.findIndex(r=>String(r.nombre).trim().toLowerCase()===myName.toLowerCase())+1; [...$('rBody').children].forEach((tr,i)=>{ if(i===pos-1) tr.classList.add('me'); }); }
     $('rMsg').textContent=list.length?`${list.length} jugador${list.length===1?'':'es'} en este mapa.`:'Todavía nadie se anota en este mapa. ¡Sé el primero!'; }
@@ -1695,12 +1697,23 @@ async function loadRank(){
 }
 if(rankingOn){
   $('rankBtn').hidden=false;
-  $('rankBtn').addEventListener('click',async()=>{ const sel=$('rMap'), names=PAGE==='daily'?(dailyOk()?[DAILY.name]:[]):[...new Set([...Object.values(BUILTIN).map(b=>b.name),...sortedDocs().map(([,d])=>d.name)])];
-    const label=n=>(DAILY&&n===DAILY.name)?'☀ Daily de hoy':n.startsWith(DAILY_PFX)?('Daily del '+new Date(n.slice(DAILY_PFX.length)+'T12:00').toLocaleDateString('es-CL',{day:'numeric',month:'short'})):n;
-    const fill=()=>{ const v=sel.value; sel.textContent=''; for(const n of names){ const o=document.createElement('option'); o.value=n; o.textContent=label(n); sel.appendChild(o); } if(v&&names.includes(v)) sel.value=v; };
-    fill(); const cur=mapById(menuPick); if(cur&&names.includes(cur.name)) sel.value=cur.name; showScreen('rank'); loadRank();
-    if(PAGE==='daily'){ try{ const rows=await supa(SUPA.table+'?select=mapa&mapa=like.Daily*&order=creado.desc&limit=500')||[]; let add=false;
-      for(const r of rows) if(r.mapa&&!names.includes(r.mapa)){ names.push(r.mapa); add=true; } if(add) fill(); }catch(e){} } });
+  $('rankBtn').addEventListener('click',()=>{
+    if(PAGE==='daily'){ RK.past=false; RK.mapa=dailyOk()?DAILY.name:''; dailyRankUI(); showScreen('rank'); loadRank(); return; }
+    const sel=$('rMap'), names=[...new Set([...Object.values(BUILTIN).map(b=>b.name),...sortedDocs().map(([,d])=>d.name)])];
+    sel.textContent=''; for(const n of names){ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); }
+    const cur=mapById(menuPick); if(cur&&names.includes(cur.name)) sel.value=cur.name; showScreen('rank'); loadRank(); });
+  // daily: ranking de hoy y, con un botón, el de días anteriores
+  const fechaLarga=f=>new Date(f+'T12:00').toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'});
+  function dailyRankUI(){ $('rMapRow').hidden=true; $('rPastRow').hidden=false; $('rPastPick').hidden=!RK.past; $('rPast').textContent=RK.past?'Volver a hoy':'Ver días anteriores';
+    $('rTitle').textContent=RK.past?'Ranking del '+fechaLarga(RK.fecha||''):'Ranking de hoy';
+    $('rBrief').textContent=(RK.past?'Los 10 mejores tiempos de ese día.':'Los 10 mejores tiempos del daily de hoy.')+' Cuenta solo el mejor de cada persona. Toca una fila para ver su recorrido.'; }
+  $('rPast').addEventListener('click',async()=>{
+    if(RK.past){ RK.past=false; RK.mapa=dailyOk()?DAILY.name:''; dailyRankUI(); loadRank(); return; }
+    let dias=[]; try{ dias=await supa('rpc/daily_anteriores',{method:'POST',body:'{}'})||[]; }catch(e){ $('rMsg').textContent=netMsg(e); return; }
+    if(!dias.length){ $('rMsg').textContent='Todavía no hay días anteriores.'; return; }
+    RK.dias=dias; const sel=$('rPastSel'); sel.textContent=''; dias.forEach((d,i)=>{ const o=document.createElement('option'); o.value=String(i); o.textContent=fechaLarga(d.fecha); sel.appendChild(o); });
+    RK.past=true; RK.fecha=dias[0].fecha; RK.mapa=dias[0].mapa; dailyRankUI(); loadRank(); });
+  $('rPastSel').addEventListener('change',()=>{ const d=RK.dias[Number($('rPastSel').value)]; if(!d) return; RK.fecha=d.fecha; RK.mapa=d.mapa; dailyRankUI(); loadRank(); });
   $('rMap').addEventListener('change',loadRank); $('rRefresh').addEventListener('click',loadRank); $('rBack').addEventListener('click',()=>showScreen('menu'));
 }
 
