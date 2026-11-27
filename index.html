@@ -104,6 +104,11 @@ label.f{display:grid;gap:4px;font-size:14px;color:var(--muted)}
 .rscroll{overflow-x:auto;margin:0 0 14px}
 .routeBox{margin:0 0 14px}
 .daily-only{display:none}
+body.page-daily .fdbox{display:none}
+body.page-daily.finde .fdbox{display:block;margin:14px 0 16px;padding:18px 16px;border-radius:14px;background:linear-gradient(135deg,rgba(95,211,195,.18),rgba(95,211,195,.04));border:1px solid rgba(95,211,195,.45);text-align:center}
+.fdbox .fdt{font-size:24px;font-weight:800;color:#fff;line-height:1.2}
+.fdbox .fds{margin-top:6px;font-size:15px;color:#bfe9e2}
+body.page-daily.finde .ctx,body.page-daily.finde #startBtn,body.page-daily.finde #dailyBest{display:none!important}
 body.page-daily .dbest:not([hidden]){display:flex;align-items:center;gap:12px;margin:10px 0 12px;padding:12px 14px;border-radius:12px;background:linear-gradient(90deg,rgba(255,207,63,.22),rgba(255,207,63,.06));border:1px solid rgba(255,207,63,.55)}
 .dbest .tro{font-size:28px;line-height:1}
 .dbest small{display:block;font-size:12px;color:#ffcf3f;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
@@ -255,8 +260,9 @@ body.editing #editor{display:grid}
     <p class="brief daily-only" id="dailyHead">Cargando el daily…</p>
     <div class="daily-only dbest" id="dailyBest" hidden></div>
     <div class="daily-only dpast" id="dailyPast"><button id="dPastBtn" class="ghost sm">Jugar días anteriores</button> <a href="#" id="dToday" hidden>Volver al daily de hoy</a></div>
-    <p class="brief">Llevas desde las ocho sin café. Los jefes rondan el piso y cualquier pausa “no planificada” termina en una reunión de 45 minutos. Consigue tu café y vuelve a tu escritorio sin que nadie te pille.</p>
-    <ul class="keys">
+    <div class="daily-only fdbox" id="fdBox"><div class="fdt">Es fin de semana… ¡descansa! 🛋️</div><div class="fds">El lunes podrás volver a trabajar.</div></div>
+    <p class="brief ctx">Llevas desde las ocho sin café. Los jefes rondan el piso y cualquier pausa “no planificada” termina en una reunión de 45 minutos. Consigue tu café y vuelve a tu escritorio sin que nadie te pille.</p>
+    <ul class="keys ctx">
       <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverse</li>
       <li><kbd>Mouse</kbd> mirar</li>
       <li><kbd>Shift</kbd> correr (hace ruido)</li>
@@ -265,7 +271,7 @@ body.editing #editor{display:grid}
       <li><kbd>Esc</kbd> pausa</li>
       <li><kbd>R</kbd> reiniciar</li>
     </ul>
-    <p class="brief" style="font-size:15px;color:var(--muted)">El cono en el piso es lo que ve cada jefe; la parte intensa te ve incluso agachado. Agachado, los tabiques te tapan. Con el café lleno no puedes correr.</p>
+    <p class="brief ctx" style="font-size:15px;color:var(--muted)">El cono en el piso es lo que ve cada jefe; la parte intensa te ve incluso agachado. Agachado, los tabiques te tapan. Con el café lleno no puedes correr.</p>
     <label class="msel">Mapa <select id="mapPick" aria-label="Mapa a jugar"></select></label>
     <div class="row"><button id="startBtn">Jugar</button><button id="rankBtn" class="ghost" hidden>Ranking</button><button id="editBtn" class="ghost">Editor de mapas</button></div>
     <p class="note" id="whoLine" hidden>Jugando como <b id="whoName"></b> · <a href="#" id="whoChange">cambiar</a></p>
@@ -1548,7 +1554,7 @@ async function dailyBest(){ const box=$('dailyBest'); if(!dailyOk()){ box.hidden
     if(list.length){ const b=document.createElement('b'); b.textContent=fmt2(Number(list[0].tiempo)); const sp=document.createElement('span'); sp.textContent='  ·  '+String(list[0].nombre); t.appendChild(b); t.appendChild(sp); }
     else { const sp=document.createElement('span'); sp.textContent='Nadie ha marcado todavía. ¡Sé el primero!'; t.appendChild(sp); }
     box.appendChild(ic); box.appendChild(t); }catch(e){ box.hidden=true; } }
-function practiceUI(){ const on=menuPick==='practica'&&PRACT; $('dToday').hidden=!on; $('dailyBest').style.display=on?'none':'';
+function practiceUI(){ const on=menuPick==='practica'&&PRACT; $('dToday').hidden=!on; if(on) document.body.classList.remove('finde'); $('dailyBest').style.display=on?'none':'';
   if(on){ $('dailyHead').textContent='Práctica · '+fechaCorta(PRACT.fecha)+' (no entra al ranking)'; $('startBtn').textContent='Jugar práctica'; $('startBtn').disabled=!engine; }
   else { $('startBtn').textContent='Jugar el daily'; } }
 $('dPastBtn').addEventListener('click',async()=>{
@@ -1556,8 +1562,9 @@ $('dPastBtn').addEventListener('click',async()=>{
 async function pickPractice(f){
   try{ const r=await fetchDaily(f); if(!r){ toast('Ese día no tiene daily.'); return; } PRACT={fecha:f,dd:r.dd}; menuPick='practica'; const m=mapById('practica'); if(m&&engine) engine.load(m.map,'practica',m.name); practiceUI(); }catch(e){ toast(netMsg(e)); } }
 $('dToday').addEventListener('click',e=>{ e.preventDefault(); PRACT=null; menuPick='daily'; practiceUI(); dailyMenu(); });
-function dailyMenu(){ if(menuPick==='practica'&&PRACT){ practiceUI(); return; } const ok=dailyOk(); $('startBtn').disabled=!ok||!engine; dailyBest(); practiceUI();
-  $('dailyHead').textContent=ok?'Daily de hoy · '+new Date(DAILY.fecha+'T12:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'}):'Hoy no hay daily programado. Vuelve más tarde.';
+const esFinde=()=>{ const d=new Date(hoyCLg()+'T12:00').getDay(); return d===0||d===6; };
+function dailyMenu(){ if(menuPick==='practica'&&PRACT){ practiceUI(); return; } const ok=dailyOk(); document.body.classList.toggle('finde',!ok&&esFinde()); $('startBtn').disabled=!ok||!engine; dailyBest(); practiceUI();
+  $('dailyHead').textContent=ok?'Daily de hoy · '+new Date(DAILY.fecha+'T12:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'}):esFinde()?'Hoy no hay daily':'Hoy no hay daily programado. Vuelve más tarde.';
   if(ok&&engine&&document.body.classList.contains('page-daily')&&!document.body.classList.contains('playing')){ menuPick='daily'; const m=mapById('daily'); engine.load(m.map,'daily',m.name); } }
 /* DEV: las etapas oficiales se editan directo y se guardan en la nube (tabla mapas_dev). Prod no lee esta tabla. */
 const BUILTIN_NAME=Object.fromEntries(Object.entries(BUILTIN).map(([k,m])=>[k,m.name]));
@@ -1733,7 +1740,7 @@ if(rankingOn){
   $('rankBtn').addEventListener('click',()=>{
     if(PAGE==='daily'){
       if(menuPick==='practica'&&PRACT){ const d=PDIAS.find(x=>x.fecha===PRACT.fecha); if(d){ fillPastSel(PDIAS,d.fecha); RK.past=true; RK.fecha=d.fecha; RK.mapa=d.mapa; dailyRankUI(); showScreen('rank'); loadRank(); return; } }
-      RK.past=false; RK.mapa=dailyOk()?DAILY.name:''; dailyRankUI(); showScreen('rank'); loadRank(); return; }
+      RK.past=false; RK.mapa=dailyOk()?DAILY.name:''; dailyRankUI(); showScreen('rank'); if(!dailyOk()){ $('rPast').click(); return; } loadRank(); return; }
     const sel=$('rMap'), names=[...new Set([...Object.values(BUILTIN).map(b=>b.name),...sortedDocs().map(([,d])=>d.name)])];
     sel.textContent=''; for(const n of names){ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); }
     const cur=mapById(menuPick); if(cur&&names.includes(cur.name)) sel.value=cur.name; showScreen('rank'); loadRank(); });
