@@ -1029,7 +1029,7 @@ function createEngine(){
         const fl=[], cols=[0xffe066,0xffb02e,0xff7a1a,0xff5a1f,0xffd23f,0xff8c2e];
         for(let i=0;i<6;i++){ const m=new THREE.Mesh(CONE,own(new THREE.MeshBasicMaterial({color:cols[i],transparent:true,opacity:0.85,depthWrite:false,blending:THREE.AdditiveBlending}))); const a=i*1.05, r=i?0.14:0;
           m.position.set(Math.cos(a)*r,0.4,Math.sin(a)*r); m.renderOrder=4; g.add(m); fl.push({m,b:i?0.28:0.38,h:i?0.55:0.8,ph:i*1.7+p.seed}); }
-        const smoke=[]; for(let i=0;i<9;i++){ const sp=new THREE.Sprite(own(new THREE.SpriteMaterial({map:smokeTex(),color:0x6d6d6d,transparent:true,opacity:0,depthWrite:false}))); sp.material.userData.keepMap=true; g.add(sp); smoke.push({sp,t:i/9}); }
+        const smoke=[]; for(let i=0;i<12;i++){ const sp=new THREE.Sprite(own(new THREE.SpriteMaterial({map:smokeTex(),color:0x3a3a3a,transparent:true,opacity:0,depthWrite:false}))); sp.material.userData.keepMap=true; g.add(sp); smoke.push({sp,t:i/12}); }
         const light=new THREE.PointLight(0xff8a3a,1.1,6,2); light.position.set(0,0.9,0); g.add(light);
         fires.push({fl,smoke,light,seed:p.seed}); break; }
       case 'wc': { const g=group(p.x,p.z,p.yaw), W=0xf4f6f7;
@@ -1445,7 +1445,7 @@ function createEngine(){
     try{
       { const t=now/1000; for(const f of fires){ for(const q of f.fl){ const k=1+0.22*Math.sin(t*9+q.ph)+0.12*Math.sin(t*23+q.ph*2); q.m.scale.set(q.b*(1.1-0.15*k),q.h*k,q.b*(1.1-0.15*k)); q.m.position.y=0.18+q.h*k/2; q.m.rotation.y=t*0.8+q.ph; }
         f.light.intensity=0.9+0.35*Math.sin(t*13+f.seed)+0.15*Math.sin(t*31);
-        for(const s of f.smoke){ s.t=(s.t+dt*0.28)%1; const u=s.t; s.sp.position.set(Math.sin(u*6+s.t*9)*0.18*u,0.9+u*2.1,Math.cos(u*5)*0.15*u); const sc=0.35+u*1.1; s.sp.scale.set(sc,sc,1); s.sp.material.opacity=Math.min(1,u*5)*(1-u)*0.45; } } }
+        for(const s of f.smoke){ s.t=(s.t+dt*0.28)%1; const u=s.t; s.sp.position.set(Math.sin(u*6+s.t*9)*0.18*u,0.9+u*2.1,Math.cos(u*5)*0.15*u); const sc=0.45+u*1.5; s.sp.scale.set(sc,sc,1); s.sp.material.opacity=Math.min(1,u*4)*(1-u)*0.85; } } }
       for(const d of doors){ if(!d.held&&!d.open&&d.hold>0) d.hold=Math.max(0,d.hold-dt*1.5); d.ang+=(d.target-d.ang)*Math.min(1,dt*7); if(d.piv) d.piv.rotation.y=d.ang; if(d.pivs) for(const q of d.pivs) q.p.rotation.y=d.ang*q.s; }
       if(alarm&&game.state==='play'){ alarm.t+=dt; if(alarm.t<8&&alarm.t>=alarm.next){ alarm.hi=!alarm.hi; sfx.siren(alarm.hi); alarm.next=alarm.t+0.45; } document.body.classList.toggle('alarm',alarm.t<8&&Math.floor(alarm.t*2.2)%2===0); } else document.body.classList.remove('alarm');
       if(game.state==='play'){ updatePlayer(dt); game.time+=dt; if(game.time>=run.next){ rec(); run.next=game.time+0.25; } }
