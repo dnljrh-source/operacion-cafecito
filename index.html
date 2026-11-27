@@ -494,8 +494,8 @@ const SOLO_DEV={etapa3:ETAPA3};
 const ES_PROD=['operacion-cafecito.pages.dev','dnljrh-source.github.io'].includes(location.hostname);
 // páginas: / (solo el daily y su historial), /etapas (juego con las etapas), /gestor (programar los días; solo dev)
 const PAGE=(()=>{ const p=location.pathname.replace(/\/+$/,'').toLowerCase(); return p.endsWith('/gestor')?'gestor':p.endsWith('/etapas')?'juego':'daily'; })(); // la dirección principal es el daily
-const EDITOR_ON=!ES_PROD; // el editor de mapas no existe en prod
-const BUILTIN=Object.assign({original:ORIGINAL,etapa2:ETAPA2},ES_PROD?{}:SOLO_DEV);
+const EDITOR_ON=!ES_PROD||PAGE==='gestor'; // en prod solo existe dentro del gestor // el editor de mapas no existe en prod
+const BUILTIN=Object.assign({original:ORIGINAL,etapa2:ETAPA2},ES_PROD&&PAGE!=='gestor'?{}:SOLO_DEV); // el gestor necesita la Etapa 3 como plantilla
 const isBuiltin=id=>Object.prototype.hasOwnProperty.call(BUILTIN,id);
 
 function num(v,def,min,max){ v=Number(v); if(!isFinite(v)) v=def; return clamp(v,min,max); }
@@ -1490,7 +1490,7 @@ window.addEventListener('hashchange',()=>{ if(location.hash==='#editor'){ if(!do
 const PROD_HOSTS=['operacion-cafecito.pages.dev','dnljrh-source.github.io'];
 const ENV=PROD_HOSTS.includes(location.hostname)?'prod':'dev';
 const SUPA={url:'https://mczzzznhddyevvfydloh.supabase.co',key:'sb_publishable_vDIwcp-c0JRwkVa772J5RQ_k5h0_YVZ',table:ENV==='prod'?'puntajes':'puntajes_dev'};
-if(ENV==='dev') setTimeout(cloudLoad,0);
+if(ENV==='dev'||PAGE==='gestor') setTimeout(cloudLoad,0); // el gestor lee la última versión de las etapas (sin guardarlas)
 if(ENV==='dev'){ document.title='[DEV] '+document.title; const b=document.createElement('div'); b.id='envBadge'; b.textContent='DEV · ambiente de pruebas'; document.body.appendChild(b);
   const g=document.createElement('div'); g.id='ghostBadge'; g.hidden=true; g.textContent='👻 Modo fantasma · G para quitarlo'; document.body.appendChild(g); }
 const rankingOn=!!(SUPA.url&&SUPA.key);
@@ -1518,12 +1518,12 @@ async function cloudSave(id,map){
     catch(e){ console.error(e); try{ localStorage.setItem('cafecito-dev-pend-'+job.id,JSON.stringify(job.map)); }catch(err){} say('Sin conexión: quedó en este navegador y se sube al volver'); } }
   cloudBusy=false; }
 async function cloudLoad(){
-  if(!cloudEdit()) return;
+  if(!cloudEdit()&&PAGE!=='gestor') return;
   let rows=[]; try{ rows=await supa('mapas_dev?select=id,doc,actualizado')||[]; }catch(e){ console.error(e); }
   for(const r of rows){ if(!isBuiltin(r.id)) continue; try{ const m=sanitizeMap(r.doc); m.name=BUILTIN_NAME[r.id]; BUILTIN[r.id]=m; }catch(e){ console.error(e); } }
   // cambios que no alcanzaron a subir
   for(const id of Object.keys(BUILTIN)){ let pend=null; try{ pend=JSON.parse(localStorage.getItem('cafecito-dev-pend-'+id)||'null'); }catch(e){}
-    if(pend){ try{ const m=sanitizeMap(pend); cloudSave(id,m); }catch(e){} } }
+    if(pend&&cloudEdit()){ try{ const m=sanitizeMap(pend); cloudSave(id,m); }catch(e){} } }
   if(document.body.classList.contains('editing')){ if(isBuiltin(E.id)&&!E.dirty) loadIntoEditor(E.id); }
   else if(!document.body.classList.contains('playing')) showMenu();
 }
