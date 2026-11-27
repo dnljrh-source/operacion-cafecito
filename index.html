@@ -104,6 +104,13 @@ label.f{display:grid;gap:4px;font-size:14px;color:var(--muted)}
 .rscroll{overflow-x:auto;margin:0 0 14px}
 .routeBox{margin:0 0 14px}
 .daily-only{display:none}
+body.page-daily .dbest:not([hidden]){display:flex;align-items:center;gap:12px;margin:10px 0 12px;padding:12px 14px;border-radius:12px;background:linear-gradient(90deg,rgba(255,207,63,.22),rgba(255,207,63,.06));border:1px solid rgba(255,207,63,.55)}
+.dbest .tro{font-size:28px;line-height:1}
+.dbest small{display:block;font-size:12px;color:#ffcf3f;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.dbest b{font-size:20px;color:#fff}
+.dbest span{color:#cfd6df;font-size:14px}
+body.page-daily .dpast{display:flex;align-items:center;gap:8px;margin:0 0 12px;flex-wrap:wrap}
+body.page-daily .dpast a{color:#ffcf3f;font-size:14px}
 body.page-daily .daily-only{display:block;color:#ffcf3f;font-weight:600}
 body.page-daily #mapPick,body.page-daily label.msel,body.page-daily #editBtn{display:none!important}
 body.page-gestor #eMap,body.page-gestor #eNew,body.page-gestor #eImport{display:none}
@@ -225,6 +232,16 @@ body.editing #editor{display:grid}
   <div id="status"><div id="cPost" class="chip">De pie</div><div id="cCap" class="chip off">Cápsula</div><div id="cMug" class="chip">Taza vacía</div></div>
   <div id="hint">Mantén apretado el botón del mouse y arrastra para mirar. Flechas ← → también giran.</div>
 </div>
+
+<div id="dailyCal" hidden>
+    <div class="dcard">
+      <div class="dhead"><button id="dPrev" class="ghost sm" aria-label="Mes anterior">‹</button><b id="dMonth"></b><button id="dNext" class="ghost sm" aria-label="Mes siguiente">›</button><div class="grow"></div><button id="dClose" class="ghost sm">Cerrar</button></div>
+      <p class="dnote" id="dNote"></p>
+      <div id="dKeyRow" hidden><label class="f">Clave para programar<input id="dKey" type="password" autocomplete="off"></label><button id="dKeyOk" class="sm">Entrar</button></div>
+      <div class="dgrid" id="dGrid"></div>
+      <p class="dnote" id="dMsg"></p>
+    </div>
+  </div>
 <div id="toast"></div>
 
 <div id="menu" class="screen show">
@@ -234,6 +251,8 @@ body.editing #editor{display:grid}
       <div><h1>Operación Cafecito</h1><p class="sub">Piso 9, 10:47 am</p></div>
     </div>
     <p class="brief daily-only" id="dailyHead">Cargando el daily…</p>
+    <div class="daily-only dbest" id="dailyBest" hidden></div>
+    <div class="daily-only dpast" id="dailyPast"><button id="dPastBtn" class="ghost sm">Jugar días anteriores</button> <a href="#" id="dToday" hidden>Volver al daily de hoy</a></div>
     <p class="brief">Llevas desde las ocho sin café. Los jefes rondan el piso y cualquier pausa “no planificada” termina en una reunión de 45 minutos. Consigue tu café y vuelve a tu escritorio sin que nadie te pille.</p>
     <ul class="keys">
       <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverse</li>
@@ -329,15 +348,7 @@ body.editing #editor{display:grid}
   </header>
   <div id="eBanner" hidden><span id="eBannerText"></span><button id="eBannerBtn" class="sm">Abrir</button></div>
   <aside id="tools" aria-label="Herramientas"></aside>
-  <div id="dailyCal" hidden>
-    <div class="dcard">
-      <div class="dhead"><button id="dPrev" class="ghost sm" aria-label="Mes anterior">‹</button><b id="dMonth"></b><button id="dNext" class="ghost sm" aria-label="Mes siguiente">›</button><div class="grow"></div><button id="dClose" class="ghost sm">Cerrar</button></div>
-      <p class="dnote">Daily de la Etapa 3. Elige un día para programar el inicio, la cafetera con café y las rutas de los jefes. Los días sin programar usan uno de los programados al azar.</p>
-      <div id="dKeyRow" hidden><label class="f">Clave para programar<input id="dKey" type="password" autocomplete="off"></label><button id="dKeyOk" class="sm">Entrar</button></div>
-      <div class="dgrid" id="dGrid"></div>
-      <p class="dnote" id="dMsg"></p>
-    </div>
-  </div>
+
   <div id="eStage"><canvas id="ecan" aria-label="Plano del mapa"></canvas><div id="eHint"></div>
     <div class="zoom"><select id="eGrid" class="sm" aria-label="Ajuste de grilla" title="Ajuste al mover y dibujar"><option value="0.1">Grilla 0,1 m</option><option value="0.5">Grilla 0,5 m</option><option value="1">Grilla 1 m</option></select><button id="zIn" class="ghost sm" aria-label="Acercar">+</button><button id="zOut" class="ghost sm" aria-label="Alejar">−</button><button id="zFit" class="ghost sm">Centrar</button></div>
   </div>
@@ -737,7 +748,10 @@ function dailyMapFrom(dd){ if(!dd||!dd.config) return null; const c=dd.config; l
   if(c.map&&typeof c.map==='object') m=clone(c.map); else { if(!BUILTIN[dd.base]) return null; m=clone(BUILTIN[dd.base]); m.start=Object.assign({},m.start,c.start||{}); if(Array.isArray(c.bosses)) m.bosses=c.bosses; }
   const out=sanitizeMap(m); out.name=DAILY_PFX+dd.fecha; return out; }
 const dailyOk=()=>!!(DAILY&&dailyMapFrom(DAILY.dd));
-function mapById(id){ if(id==='daily'){ const m=DAILY&&dailyMapFrom(DAILY.dd), c=DAILY&&DAILY.dd.config; return m?{name:m.name,map:m,readonly:true,cafetera:c&&!c.alias&&Number.isInteger(Number(c.cafetera))?Number(c.cafetera):undefined}:null; } if(isBuiltin(id)) return {name:BUILTIN[id].name,map:BUILTIN[id],readonly:true}; const d=Store.docs.get(id); return d?{name:d.name,map:d.map,doc:d}:null; }
+var PRACT=null; // práctica de un día anterior: {fecha, dd}
+const PRACT_PFX='Práctica · ';
+function mapById(id){ if(id==='practica'){ const m=PRACT&&dailyMapFrom(PRACT.dd), c=PRACT&&PRACT.dd.config; if(!m) return null; m.name=PRACT_PFX+PRACT.fecha; return {name:m.name,map:m,readonly:true,cafetera:c&&Number.isInteger(Number(c.cafetera))&&!c.alias?Number(c.cafetera):undefined}; }
+  if(id==='daily'){ const m=DAILY&&dailyMapFrom(DAILY.dd), c=DAILY&&DAILY.dd.config; return m?{name:m.name,map:m,readonly:true,cafetera:c&&!c.alias&&Number.isInteger(Number(c.cafetera))?Number(c.cafetera):undefined}:null; } if(isBuiltin(id)) return {name:BUILTIN[id].name,map:BUILTIN[id],readonly:true}; const d=Store.docs.get(id); return d?{name:d.name,map:d.map,doc:d}:null; }
 
 /* ================= modal ================= */
 let modalCb=null;
@@ -1496,7 +1510,7 @@ function fillMapSelect(sel,selected,includeOriginal){
   if([...sel.options].some(o=>o.value===selected)) sel.value=selected;
 }
 let menuPick=PAGE==='daily'?'daily':'original';
-function refreshMenu(){ fillMapSelect($('mapPick'),menuPick,true); menuPick=$('mapPick').value; }
+function refreshMenu(){ if(PAGE==='daily'&&menuPick==='practica'&&PRACT){ try{ practiceUI(); }catch(e){} return; } fillMapSelect($('mapPick'),menuPick,true); menuPick=$('mapPick').value; if(PAGE==='daily'){ try{ dailyMenu(); }catch(e){} } }
 function showMenu(){
   document.body.classList.remove('editing'); if(engine){ engine.suspend(false); engine.toMenu(); }
   refreshMenu(); const m=mapById(menuPick)||mapById('original'); if(engine) engine.load(m.map,menuPick,m.name);
@@ -1525,7 +1539,22 @@ async function fetchDaily(fecha){ const k=fecha||'hoy'; if(dailyCache[k]) return
 async function loadDaily(){ try{ DAILY=await fetchDaily(null); }catch(e){ console.error(e); DAILY=null; } if(PAGE==='daily'&&!document.body.classList.contains('playing')){ try{ dailyMenu(); }catch(e){ console.error(e); } } }
 if(rankingOn&&PAGE!=='juego') setTimeout(loadDaily,0);
 // página /daily: el menú muestra solo el daily de hoy
-function dailyMenu(){ const ok=dailyOk(); $('startBtn').disabled=!ok||!engine;
+function fechaCorta(f){ return new Date(f+'T12:00').toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'}); }
+async function dailyBest(){ const box=$('dailyBest'); if(!dailyOk()){ box.hidden=true; return; }
+  try{ const list=await bestList(DAILY.name); box.hidden=false; box.textContent='';
+    const ic=document.createElement('div'); ic.className='tro'; ic.textContent='🏆'; const t=document.createElement('div'); const sm=document.createElement('small'); sm.textContent='Mejor marca de hoy'; t.appendChild(sm);
+    if(list.length){ const b=document.createElement('b'); b.textContent=fmt2(Number(list[0].tiempo)); const sp=document.createElement('span'); sp.textContent='  ·  '+String(list[0].nombre); t.appendChild(b); t.appendChild(sp); }
+    else { const sp=document.createElement('span'); sp.textContent='Nadie ha marcado todavía. ¡Sé el primero!'; t.appendChild(sp); }
+    box.appendChild(ic); box.appendChild(t); }catch(e){ box.hidden=true; } }
+function practiceUI(){ const on=menuPick==='practica'&&PRACT; $('dToday').hidden=!on; $('dailyBest').style.display=on?'none':'';
+  if(on){ $('dailyHead').textContent='Práctica · '+fechaCorta(PRACT.fecha)+' (no entra al ranking)'; $('startBtn').textContent='Jugar práctica'; $('startBtn').disabled=!engine; }
+  else { $('startBtn').textContent='Jugar el daily'; } }
+$('dPastBtn').addEventListener('click',async()=>{
+  try{ const dias=await supa('rpc/daily_anteriores',{method:'POST',body:'{}'})||[]; if(!dias.length){ toast('Todavía no hay días anteriores.'); return; } openPlayCal(dias,pickPractice); }catch(e){ toast(netMsg(e)); } });
+async function pickPractice(f){
+  try{ const r=await fetchDaily(f); if(!r){ toast('Ese día no tiene daily.'); return; } PRACT={fecha:f,dd:r.dd}; menuPick='practica'; const m=mapById('practica'); if(m&&engine) engine.load(m.map,'practica',m.name); practiceUI(); }catch(e){ toast(netMsg(e)); } }
+$('dToday').addEventListener('click',e=>{ e.preventDefault(); PRACT=null; menuPick='daily'; practiceUI(); dailyMenu(); });
+function dailyMenu(){ if(menuPick==='practica'&&PRACT){ practiceUI(); return; } const ok=dailyOk(); $('startBtn').disabled=!ok||!engine; dailyBest(); practiceUI();
   $('dailyHead').textContent=ok?'Daily de hoy · '+new Date(DAILY.fecha+'T12:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'}):'Hoy no hay daily programado. Vuelve más tarde.';
   if(ok&&engine&&document.body.classList.contains('page-daily')&&!document.body.classList.contains('playing')){ menuPick='daily'; const m=mapById('daily'); engine.load(m.map,'daily',m.name); } }
 /* DEV: las etapas oficiales se editan directo y se guardan en la nube (tabla mapas_dev). Prod no lee esta tabla. */
@@ -1679,6 +1708,7 @@ $('wSave').addEventListener('click',async()=>{
     if(!res||res.ok!==true){ const msg=(res&&res.error)||'El ranking rechazó el puntaje.';
       $('wMsg').textContent=msg; if(/nombre/i.test(msg)){ $('wNameRow').hidden=false; $('wSave').hidden=false; $('wSave').disabled=false; $('wName').select(); $('wName').focus(); } else lastRun.saved=true; saving=false; return; }
     lastRun.saved=true;
+    if(String(lastRun.m).startsWith(PRACT_PFX)){ $('wMsg').textContent='Práctica guardada. Las prácticas no entran al ranking.'; saving=false; return; }
     const list=await bestList(lastRun.m); const pos=list.findIndex(r=>String(r.nombre).trim().toLowerCase()===n.toLowerCase())+1;
     const mine=list[pos-1]; const improved=mine&&Math.abs(Number(mine.tiempo)-lastRun.t)<0.011;
     $('wMsg').textContent=improved?`¡Guardado! Quedaste en el lugar ${pos} de ${list.length}.`:`Guardado. Tu mejor marca sigue siendo ${fmt2(Number(mine?mine.tiempo:lastRun.t))} (lugar ${pos}).`;
@@ -1796,7 +1826,7 @@ $('eMap').addEventListener('change',()=>{ flushSave(); loadIntoEditor($('eMap').
 
 /* ---- gestor del daily (solo dev) ---- */
 let DKEY=''; try{ DKEY=localStorage.getItem('cafecito-daily-clave')||''; }catch(e){}
-const DCAL={y:0,m:0,list:new Map(),loaded:false};
+const DCAL={y:0,m:0,list:new Map(),loaded:false,mode:'edit',allowed:new Set(),onPick:null};
 const ymd=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 const hoyCL=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago'}).format(new Date());
 async function dailyRpc(fn,args){ try{ return await supa('rpc/'+fn,{method:'POST',body:JSON.stringify(Object.assign({p_clave:DKEY},args||{}))}); }
@@ -1810,9 +1840,16 @@ function renderCal(){ const g=$('dGrid'); g.textContent=''; const {y,m}=DCAL, fi
   for(const w of ['lu','ma','mi','ju','vi','sá','do']){ const d=document.createElement('div'); d.className='dw'; d.textContent=w; g.appendChild(d); }
   for(let i=0;i<off;i++) g.appendChild(document.createElement('div'));
   for(let d=1;d<=days;d++){ const f=ymd(y,m,d), b=document.createElement('button'); b.textContent=String(d);
+    if(DCAL.mode==='play'){ const ok=DCAL.allowed.has(f); if(ok) b.classList.add('on'); if(f===hoy) b.classList.add('today'); if(f<hoy) b.classList.add('past');
+      b.title=ok?'Jugar este día':f>=hoy?'Todavía no':'Sin daily'; b.disabled=!ok; b.addEventListener('click',()=>{ $('dailyCal').hidden=true; if(DCAL.onPick) DCAL.onPick(f); }); g.appendChild(b); continue; }
     if(DCAL.list.has(f)) b.classList.add('on'); if(f===hoy) b.classList.add('today'); if(f<hoy) b.classList.add('past');
     b.title=DCAL.list.has(f)?'Programado':'Sin programar'; b.disabled=!DCAL.loaded; b.addEventListener('click',()=>enterDaily(f)); g.appendChild(b); } }
-function openDailyCal(){ $('dClose').hidden=!E.daily;
+// el mismo calendario, para elegir un día anterior y jugarlo como práctica
+function openPlayCal(dias,onPick){ DCAL.mode='play'; DCAL.allowed=new Set(dias.map(d=>d.fecha)); DCAL.onPick=onPick;
+  const [y,m]=(dias[0]?dias[0].fecha:hoyCL()).split('-').map(Number); DCAL.y=y; DCAL.m=m-1;
+  $('dNote').textContent='Elige un día anterior para jugarlo como práctica. Los días en verde tienen daily; la marca se guarda pero no entra al ranking.';
+  $('dKeyRow').hidden=true; $('dClose').hidden=false; $('dMsg').textContent=dias.length+(dias.length===1?' día disponible.':' días disponibles.'); $('dailyCal').hidden=false; renderCal(); }
+function openDailyCal(){ DCAL.mode='edit'; $('dNote').textContent='Daily de la Etapa 3. Elige un día para programar el plano, el inicio, la cafetera con café y las rutas de los jefes. Los días sin programar usan uno de los programados al azar.'; $('dClose').hidden=!E.daily;
   const [y,m]=hoyCL().split('-').map(Number); if(!DCAL.y){ DCAL.y=y; DCAL.m=m-1; } $('dailyCal').hidden=false; $('dKey').value=''; renderCal(); dailyLoadList(); }
 $('eDailyBtn').addEventListener('click',openDailyCal);
 $('dClose').addEventListener('click',()=>{ $('dailyCal').hidden=true; });
