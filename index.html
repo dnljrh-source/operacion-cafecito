@@ -1856,7 +1856,7 @@ if(rankingOn){
   // daily: ranking de hoy y, con un botón, el de días anteriores
   const fechaLarga=f=>new Date(f+'T12:00').toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'});
   function fillPastSel(dias,fecha){ RK.dias=dias; const sel=$('rPastSel'); sel.textContent=''; dias.forEach((d,i)=>{ const o=document.createElement('option'); o.value=String(i); o.textContent=fechaLarga(d.fecha); sel.appendChild(o); }); const k=dias.findIndex(d=>d.fecha===fecha); if(k>=0) sel.value=String(k); }
-  function dailyRankUI(){ $('rMapRow').hidden=true; $('rPastRow').hidden=false; $('rPastPick').hidden=!RK.past; $('rPast').textContent=RK.past?'Volver a hoy':'Ver días anteriores';
+  function dailyRankUI(){ $('rMapRow').hidden=true; $('rPastRow').hidden=false; $('rPastPick').hidden=!RK.past; $('rPast').textContent='Ver días anteriores'; $('rPast').hidden=!!RK.past;
     $('rTitle').textContent=RK.past?'Ranking del '+fechaLarga(RK.fecha||''):'Ranking de hoy';
     $('rBrief').textContent=(RK.past?'Los 10 mejores tiempos de ese día.':'Los 10 mejores tiempos del daily de hoy.')+' Cuenta solo el mejor de cada persona. Toca una fila para ver su recorrido.'; }
   $('rPast').addEventListener('click',async()=>{
