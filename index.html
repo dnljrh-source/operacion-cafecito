@@ -1831,14 +1831,14 @@ $('wSave').addEventListener('click',async()=>{
   saving=false;
 });
 const RK={past:false,mapa:'',fecha:'',dias:[]};
-async function loadShame(){ const box=$('shameBox'), ul=$('shameList');
-  try{ const rows=await supa('tramposos?select=nombre,mapa,tiempo,motivo,creado&order=creado.desc&limit=30')||[]; ul.textContent=''; box.hidden=!rows.length;
+async function loadShame(mapa){ const box=$('shameBox'), ul=$('shameList');
+  try{ if(!mapa){ box.hidden=true; return; } // cada día tiene su propio muro
+    const rows=await supa('tramposos?select=nombre,mapa,tiempo,motivo,creado&mapa=eq.'+encodeURIComponent(mapa)+'&order=creado.desc&limit=30')||[]; ul.textContent=''; box.hidden=!rows.length;
     for(const r of rows){ const li=document.createElement('li'), poo=document.createElement('span'), t=document.createElement('div'), b=document.createElement('b'), sm=document.createElement('small');
       poo.className='poo'; poo.textContent='💩'; b.textContent=String(r.nombre); const donde=String(r.mapa).startsWith(DAILY_PFX)?'Daily del '+new Date(r.mapa.slice(DAILY_PFX.length)+'T12:00').toLocaleDateString('es-CL',{day:'numeric',month:'short'}):String(r.mapa);
       sm.textContent=' · '+donde+(r.tiempo!=null?' · '+fmt2(Number(r.tiempo)):'')+' — '+String(r.motivo); t.append(b,sm); li.append(poo,t); ul.appendChild(li); } }catch(e){ box.hidden=true; } }
 async function loadRank(){
-  loadShame();
-  const m=PAGE==='daily'?RK.mapa:$('rMap').value; if(!m){ $('rBody').textContent=''; $('rMsg').textContent='Hoy no hay daily programado.'; return; } $('rMsg').textContent='Cargando…'; $('rBody').textContent='';
+  const m=PAGE==='daily'?RK.mapa:$('rMap').value; loadShame(m); if(!m){ $('rBody').textContent=''; $('rMsg').textContent='Hoy no hay daily programado.'; return; } $('rMsg').textContent='Cargando…'; $('rBody').textContent='';
   try{ const list=await bestList(m); fillRows($('rBody'),list.slice(0,10),myName?{n:myName,t:-1}:null,true,r=>showRemoteRoute(r,m,'r')); $('rRouteBox').hidden=true;
     if(myName){ const pos=list.findIndex(r=>String(r.nombre).trim().toLowerCase()===myName.toLowerCase())+1; [...$('rBody').children].forEach((tr,i)=>{ if(i===pos-1) tr.classList.add('me'); }); }
     $('rMsg').textContent=list.length?`${list.length} jugador${list.length===1?'':'es'} en este mapa.`:'Todavía nadie se anota en este mapa. ¡Sé el primero!'; }
@@ -1856,7 +1856,7 @@ if(rankingOn){
   // daily: ranking de hoy y, con un botón, el de días anteriores
   const fechaLarga=f=>new Date(f+'T12:00').toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'});
   function fillPastSel(dias,fecha){ RK.dias=dias; const sel=$('rPastSel'); sel.textContent=''; dias.forEach((d,i)=>{ const o=document.createElement('option'); o.value=String(i); o.textContent=fechaLarga(d.fecha); sel.appendChild(o); }); const k=dias.findIndex(d=>d.fecha===fecha); if(k>=0) sel.value=String(k); }
-  function dailyRankUI(){ $('rMapRow').hidden=true; $('rPastRow').hidden=false; $('rPastPick').hidden=!RK.past; $('rPast').textContent=RK.past?'Volver a hoy':'Ver días anteriores';
+  function dailyRankUI(){ $('rMapRow').hidden=true; $('rPastRow').hidden=false; $('rPastPick').hidden=!RK.past; $('rPast').textContent='Ver días anteriores'; $('rPast').hidden=!!RK.past;
     $('rTitle').textContent=RK.past?'Ranking del '+fechaLarga(RK.fecha||''):'Ranking de hoy';
     $('rBrief').textContent=(RK.past?'Los 10 mejores tiempos de ese día.':'Los 10 mejores tiempos del daily de hoy.')+' Cuenta solo el mejor de cada persona. Toca una fila para ver su recorrido.'; }
   $('rPast').addEventListener('click',async()=>{
