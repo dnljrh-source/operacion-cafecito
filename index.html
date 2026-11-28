@@ -553,7 +553,8 @@ function sanitizeMap(m){
   for(const it of (Array.isArray(m.items)?m.items:[]).slice(0,900)){
     if(!it||typeof it!=='object'||!Object.prototype.hasOwnProperty.call(TYPES,it.t)) continue;
     const T=TYPES[it.t];
-    if(T.kind==='point'){ const o={t:it.t,x:X(it.x),z:Z(it.z),r:normR(it.r)}; if(it.t==='letrero') o.text=String(it.text||'LETRERO').slice(0,22); if(it.t==='puerta'&&it.text) o.text=String(it.text).slice(0,12); if(it.t==='npc'){ o.anim=['espera','conversa','baila'].includes(it.anim)?it.anim:'espera'; if(['h','m'].includes(it.sexo)) o.sexo=it.sexo; if(['rubio','moreno','negro'].includes(it.tono)) o.tono=it.tono; if(['top','bald','jopo','bun','long','cola'].includes(it.pelo)) o.pelo=it.pelo; } out.items.push(o); continue; }
+    if(T.kind==='point'){ const o={t:it.t,x:X(it.x),z:Z(it.z),r:normR(it.r)}; if(it.t==='letrero') o.text=String(it.text||'LETRERO').slice(0,22); if(it.t==='puerta'&&it.text) o.text=String(it.text).slice(0,12); if(it.t==='aseo'){ if(['rubio','moreno','negro'].includes(it.tono)) o.tono=it.tono; if(['bun','long','cola'].includes(it.pelo)) o.pelo=it.pelo; }
+    if(it.t==='npc'){ o.anim=['espera','conversa','baila'].includes(it.anim)?it.anim:'espera'; if(['h','m'].includes(it.sexo)) o.sexo=it.sexo; if(['rubio','moreno','negro'].includes(it.tono)) o.tono=it.tono; if(['top','bald','jopo','bun','long','cola'].includes(it.pelo)) o.pelo=it.pelo; } out.items.push(o); continue; }
     const o={t:it.t,x0:X(it.x0),z0:Z(it.z0),x1:X(it.x1),z1:Z(it.z1)};
     if(T.kind==='line'){ const q=lineSnap({x:o.x0,z:o.z0},{x:o.x1,z:o.z1},2); o.x1=q.x; o.z1=q.z; if(it.t==='puerta_vidrio'){ if(Math.abs(o.x1-o.x0)>=Math.abs(o.z1-o.z0)) o.z1=o.z0; else o.x1=o.x0; } if(Math.hypot(o.x1-o.x0,o.z1-o.z0)<0.05){ o.x1=r2(o.x0+(o.x1>=o.x0?0.05:-0.05)); o.z1=o.z0; } }
     else { if(Math.abs(o.x1-o.x0)<0.05) o.x1=r2(Math.min(o.x0,o.x1)+0.05); if(Math.abs(o.z1-o.z0)<0.05) o.z1=r2(Math.min(o.z0,o.z1)+0.05); }
@@ -652,7 +653,7 @@ function layout(map){
     if(it.t==='puerta_real'||it.t==='salida'){ const [lw,ld]=fpOf(it.t==='salida'?1.2:0.92,0.07,it.r); S(it.x,it.z,lw,ld,2.2,it.t==='salida'?'exit':'door'); solids[solids.length-1].door=true;
       props.push({k:it.t,x:it.x,z:it.z,yaw,r:it.r,sid:solids.length-1}); return; }
     if(it.t==='pelota'){ props.push({k:'pelota',x:it.x,z:it.z}); return; } // sin sólido: rueda y rebota con física
-    if(it.t==='aseo'){ props.push({k:'npc',rol:'aseo',x:it.x,z:it.z,yaw,anim:'barre',seed:idx,sexo:'m'}); return; }
+    if(it.t==='aseo'){ props.push({k:'npc',rol:'aseo',x:it.x,z:it.z,yaw,anim:'barre',seed:idx,sexo:'m',tono:it.tono,pelo:it.pelo}); return; }
     if(it.t==='npc'){ props.push({k:'npc',x:it.x,z:it.z,yaw,anim:it.anim||'espera',seed:idx,sexo:it.sexo,tono:it.tono,pelo:it.pelo}); return; }
     if(it.t==='fuego'){ S(it.x,it.z,0.9,0.9,0.5,'fire',false); props.push({k:'fuego',x:it.x,z:it.z,w:0.9,d:0.9,seed:idx}); return; } // no se puede pisar, pero no tapa la vista
     if(it.t==='wc'||it.t==='lavamanos'||it.t==='basurero'){ S(it.x,it.z,w,d,T.h,'fixture'); props.push({k:it.t,x:it.x,z:it.z,yaw,r:it.r}); return; }
@@ -1133,7 +1134,7 @@ function createEngine(){
         const m=new THREE.Mesh(new THREE.SphereGeometry(1,28,20),mat); m.scale.setScalar(BR); m.castShadow=true; m.receiveShadow=true; root.add(m);
         balls.push({m,x0:p.x,z0:p.z,x:p.x,y:BR,z:p.z,vx:0,vy:0,vz:0,R:BR,held:false,cd:0}); m.position.set(p.x,BR,p.z); break; }
       case 'npc': { const i=p.seed||0, TONO={rubio:[0xf3cfae,0xd9b25a],moreno:[0xc68e62,0x3b2a20],negro:[0x6b4630,0x161414]}[p.tono], muj=p.sexo==='m', hom=p.sexo==='h';
-        const aseo=p.rol==='aseo', w=person(aseo?{skin:[0xf1c9a5,0xc68e62,0x8d5a3b][i%3],top:0x2f6fb8,pants:0x24569a,shirt:0x2f6fb8,hairC:[0x3b2a20,0x1c1b1f,0x8a5a2b][i%3],hair:'bun'}:{skin:TONO?TONO[0]:[0xf1c9a5,0xd9a37e,0xb07c57,0x8d5a3b][i%4],top:[0x4a90b8,0xc0504d,0x6aa86d,0xe2b93b,0x8e6ac8,0x2f6f73][i%6],pants:[0x3d4452,0x2a2f3a,0x6b5a45][i%3],
+        const aseo=p.rol==='aseo', w=person(aseo?{skin:TONO?TONO[0]:[0xf1c9a5,0xc68e62,0x8d5a3b][i%3],top:0x2f6fb8,pants:0x24569a,shirt:0x2f6fb8,hairC:TONO?TONO[1]:[0x3b2a20,0x1c1b1f,0x8a5a2b][i%3],hair:p.pelo||'bun'}:{skin:TONO?TONO[0]:[0xf1c9a5,0xd9a37e,0xb07c57,0x8d5a3b][i%4],top:[0x4a90b8,0xc0504d,0x6aa86d,0xe2b93b,0x8e6ac8,0x2f6f73][i%6],pants:[0x3d4452,0x2a2f3a,0x6b5a45][i%3],
           hairC:TONO?TONO[1]:[0x3b2a20,0x1c1b1f,0x8a5a2b,0xc8a15a][i%4],hair:p.pelo?p.pelo:muj?'bun':hom?['top','bald','top'][i%3]:['top','long','bun','bald'][i%4],glasses:i%5===2,beard:!muj&&i%7===3});
         if(p.seated){ w.g.position.set(p.x,0.5-0.9*0.92,p.z); w.inner.scale.setScalar(0.92); w.g.rotation.y=p.yaw; w.legL.rotation.x=w.legR.rotation.x=-Math.PI/2; w.armL.rotation.x=w.armR.rotation.x=-1.1; workers.push(w); }
         else { w.g.position.set(p.x,0,p.z); w.g.rotation.y=p.yaw; const n={w,anim:p.anim,ph:i*1.37,yaw:p.yaw,x:p.x,z:p.z};
@@ -2270,13 +2271,17 @@ function buildPanel(){
       sec.append(rangeField('Compañeros sentados',0,1,0.05,o.gente??0.25,v=>Math.round(v*100)+'%',v=>{ o.gente=v; })); }
     if(o.t==='letrero'){ const inp=el('input',{maxlength:'22',value:o.text||''}); inp.addEventListener('focus',()=>snapshot()); inp.addEventListener('input',()=>{ o.text=inp.value.toUpperCase().slice(0,22); recompute(); scheduleSave(); draw(); });
       sec.append(el('label',{class:'f'},['Texto',inp])); }
+    if(o.t==='aseo'){ const opt=(lab,key,list)=>{ const q=el('select',{}); for(const [v,t] of list){ const op=el('option',{value:v,text:t}); if((o[key]||'')===v) op.selected=true; q.append(op); }
+        q.addEventListener('change',()=>{ snapshot(); if(q.value) o[key]=q.value; else delete o[key]; changed(); }); sec.append(el('label',{class:'f'},[lab,q])); };
+      opt('Tipo','tono',[['','Al azar'],['rubio','Rubio'],['moreno','Moreno'],['negro','Negro']]);
+      opt('Peinado','pelo',[['','Moño alto'],['long','Pelo largo'],['cola','Cola de caballo']]); }
     if(o.t==='npc'){ const L=E.L&&E.L.props.find(q=>q.k==='npc'&&q.seed===s.i), sel=el('select',{}); for(const [v,t] of [['espera','Esperando'],['conversa','Conversando'],['baila','Bailando']]){ const op=el('option',{value:v,text:t}); if((o.anim||'espera')===v) op.selected=true; sel.append(op); }
       sel.addEventListener('change',()=>{ snapshot(); o.anim=sel.value; changed(); });
       sec.append(el('p',{text:L&&L.seated?'Está sentado en una silla: mira hacia su escritorio (flecha en el plano). Muévelo lejos de las sillas para que quede de pie.':'Está de pie. La flecha del plano muestra hacia dónde mira; gíralo con R o «Girar 90°». Si lo pones sobre una silla se sienta solo.'}));
       if(!(L&&L.seated)) sec.append(el('label',{class:'f'},['Qué hace de pie',sel]));
       const opt=(lab,key,list)=>{ const q=el('select',{}); for(const [v,t] of list){ const op=el('option',{value:v,text:t}); if((o[key]||'')===v) op.selected=true; q.append(op); }
         q.addEventListener('change',()=>{ snapshot(); if(q.value) o[key]=q.value; else delete o[key]; if(key==='sexo') delete o.pelo; changed(); if(key==='sexo') buildPanel(); }); sec.append(el('label',{class:'f'},[lab,q])); };
-      opt('Sexo','sexo',[['','Al azar'],['h','Hombre'],['m','Mujer (con moño)']]);
+      opt('Sexo','sexo',[['','Al azar'],['h','Hombre'],['m','Mujer']]);
       opt('Tipo','tono',[['','Al azar'],['rubio','Rubio'],['moreno','Moreno'],['negro','Negro']]);
       const PH=[['top','Corto'],['bald','Pelado'],['jopo','Con jopo']], PM=[['bun','Moño alto'],['long','Pelo largo'],['cola','Cola de caballo']];
       opt('Peinado','pelo',[['','Al azar']].concat(o.sexo==='h'?PH:o.sexo==='m'?PM:PH.concat(PM))); }
