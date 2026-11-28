@@ -226,6 +226,11 @@ body.editing #editor{display:grid}
 @media(max-width:600px){#meterBox{top:auto;bottom:70px}#timer{top:auto;bottom:16px}.stats{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 .authTabs{display:flex;gap:8px;margin-bottom:10px}#nameAsk label.f{margin-top:12px}#nameAsk .row{margin-top:18px}.ureset{margin:8px 0;padding:8px;border:1px solid #39424f;border-radius:10px}.ureset input{flex:1;min-width:0}
+#gHome{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:#12151b}
+#gHome .gcard{background:#1b1f27;border:1px solid #2c333e;border-radius:18px;padding:28px;width:min(420px,92vw)}#gHome .gwide{width:min(820px,94vw);max-height:88vh;display:flex;flex-direction:column}
+#gHome .gbtns{display:grid;gap:12px;margin-top:14px}#gHome .gbtns button{font-size:18px;padding:16px}#gHome label.f{margin-top:12px}#gHome .row{margin-top:14px;align-items:center;gap:10px}
+#gHome[hidden],#gHome .gcard[hidden]{display:none!important}.gulist{overflow:auto;flex:1}.gulist table{width:100%;border-collapse:collapse;font-size:14px}.gulist th{text-align:left;color:var(--muted);font-weight:500;padding:6px;position:sticky;top:0;background:#1b1f27}.gulist td{padding:7px 6px;border-top:1px solid #2a303a}
+.gulist .tmp{color:#ffcf3f}.gulist .rst{display:flex;gap:6px}.gulist .rst input{width:120px}
 </style>
 </head>
 <body>
@@ -255,14 +260,24 @@ body.editing #editor{display:grid}
 
 <div id="dailyCal" hidden>
     <div class="dcard">
-      <div class="dhead"><button id="dPrev" class="ghost sm" aria-label="Mes anterior">‹</button><b id="dMonth"></b><button id="dNext" class="ghost sm" aria-label="Mes siguiente">›</button><div class="grow"></div><button id="dClose" class="ghost sm">Cerrar</button></div>
+      <div class="dhead"><button id="dPrev" class="ghost sm" aria-label="Mes anterior">‹</button><b id="dMonth"></b><button id="dNext" class="ghost sm" aria-label="Mes siguiente">›</button><div class="grow"></div><button id="dHome" class="ghost sm" hidden>← Inicio</button><button id="dClose" class="ghost sm">Cerrar</button></div>
       <p class="dnote" id="dNote"></p>
       <div id="dKeyRow" hidden><label class="f">Clave para programar<input id="dKey" type="password" autocomplete="off"></label><button id="dKeyOk" class="sm">Entrar</button></div>
-      <div id="uReset" hidden class="ureset"><b>Resetear contraseña de un usuario</b><div class="row"><input id="uName" maxlength="20" placeholder="Usuario"><input id="uTemp" maxlength="40" placeholder="Clave temporal"><button id="uGo" class="sm">Resetear</button></div><p class="dnote" id="uMsg">Dile la clave temporal a la persona: al entrar se le pide crear una nueva.</p></div>
       <div class="dgrid" id="dGrid"></div>
       <p class="dnote" id="dMsg"></p>
     </div>
   </div>
+<div id="gHome" hidden>
+  <div class="gcard" id="gLogin"><h2 class="big">Gestor</h2><p class="brief">Operación Cafecito · acceso restringido</p>
+    <label class="f">Contraseña<input id="gKey" type="password" autocomplete="off"></label><div class="row"><button id="gKeyOk">Entrar</button><span id="gMsg" role="status"></span></div></div>
+  <div class="gcard" id="gMenu" hidden><h2 class="big">Gestor</h2><p class="brief">¿Qué quieres hacer?</p>
+    <div class="gbtns"><button id="gGoUsers">👥 Gestionar usuarios</button><button id="gGoDaily">📅 Programar dailys</button></div>
+    <p class="note"><a href="#" id="gOut">Salir del gestor</a></p></div>
+  <div class="gcard gwide" id="gUsers" hidden><div class="row"><button id="gUBack" class="ghost sm">← Inicio</button><h2 class="big" style="margin:0">Usuarios</h2><span class="grow"></span><span id="gUCount" class="note" style="margin:0"></span></div>
+    <input id="gUFilter" placeholder="Buscar usuario…" style="width:100%;box-sizing:border-box;margin:10px 0">
+    <div class="gulist"><table><thead><tr><th>Usuario</th><th>Creado</th><th>Marcas</th><th>Estado</th><th></th></tr></thead><tbody id="gUBody"></tbody></table></div>
+    <p class="dnote" id="gUMsg"></p></div>
+</div>
 <div id="toast"></div>
 
 <div id="menu" class="screen show">
@@ -1678,7 +1693,7 @@ function dailyMenu(){ if(menuPick==='practica'&&PRACT){ practiceUI(); return; } 
 /* Etapas oficiales editadas en la nube, separadas por ambiente: dev → mapas_dev (libre), prod → mapas_prod (solo con la clave del gestor). */
 const MAPAS_TABLA=()=>ENV==='prod'?'mapas_prod':'mapas_dev';
 const BUILTIN_NAME=Object.fromEntries(Object.entries(BUILTIN).map(([k,m])=>[k,m.name]));
-function cloudEdit(){ if(typeof ENV==='undefined') return false; if(ENV==='dev') return true; try{ return !!(DKEY||localStorage.getItem('cafecito-daily-clave')); }catch(e){ return false; } }
+function cloudEdit(){ if(typeof ENV==='undefined') return false; if(ENV==='dev') return true; try{ return !!DKEY; }catch(e){ return false; } }
 let cloudBusy=false, cloudNext=null;
 async function cloudSave(id,map){
   map.name=BUILTIN_NAME[id]; map.obj.desk={x:map.start.x,z:map.start.z,r:map.start.r}; BUILTIN[id]=map; cloudNext={id,map};
@@ -1986,14 +2001,14 @@ Store.listeners.add(()=>{ refreshMenu(); if(document.body.classList.contains('ed
 $('eMap').addEventListener('change',()=>{ flushSave(); loadIntoEditor($('eMap').value); });
 
 /* ---- gestor del daily (solo dev) ---- */
-let DKEY=''; try{ DKEY=localStorage.getItem('cafecito-daily-clave')||''; }catch(e){}
+let DKEY=''; try{ localStorage.removeItem('cafecito-daily-clave'); }catch(e){} // la clave del gestor vive solo en memoria: al cerrar hay que escribirla de nuevo
 const DCAL={y:0,m:0,list:new Map(),loaded:false,mode:'edit',allowed:new Set(),onPick:null};
 const ymd=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 const hoyCL=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago'}).format(new Date());
 async function dailyRpc(fn,args){ try{ return await supa('rpc/'+fn,{method:'POST',body:JSON.stringify(Object.assign({p_clave:DKEY},args||{}))}); }
-  catch(e){ if(/Clave/i.test(e.server||'')){ DKEY=''; try{ localStorage.removeItem('cafecito-daily-clave'); }catch(err){} } throw e; } }
+  catch(e){ if(/Clave/i.test(e.server||'')){ DKEY=''; if(PAGE==='gestor') gShow('login'); } throw e; } }
 async function dailyLoadList(){ $('dMsg').textContent='Cargando…';
-  try{ const rows=await dailyRpc('listar_daily')||[]; DCAL.list=new Map(rows.map(r=>[r.fecha,r.config])); DCAL.loaded=true; $('dKeyRow').hidden=true; $('uReset').hidden=PAGE!=='gestor'; $('dMsg').textContent=DCAL.list.size?`${DCAL.list.size} día${DCAL.list.size===1?'':'s'} programado${DCAL.list.size===1?'':'s'}.`:'Todavía no hay días programados.'; }
+  try{ const rows=await dailyRpc('listar_daily')||[]; DCAL.list=new Map(rows.map(r=>[r.fecha,r.config])); DCAL.loaded=true; $('dKeyRow').hidden=true; $('dMsg').textContent=DCAL.list.size?`${DCAL.list.size} día${DCAL.list.size===1?'':'s'} programado${DCAL.list.size===1?'':'s'}.`:'Todavía no hay días programados.'; }
   catch(e){ DCAL.loaded=false; $('dKeyRow').hidden=false; $('dMsg').textContent=DKEY?netMsg(e):'Escribe la clave para ver y programar los días.'; }
   renderCal(); }
 function renderCal(){ const g=$('dGrid'); g.textContent=''; const {y,m}=DCAL, first=new Date(y,m,1), days=new Date(y,m+1,0).getDate(), off=(first.getDay()+6)%7, hoy=hoyCL();
@@ -2009,16 +2024,37 @@ function renderCal(){ const g=$('dGrid'); g.textContent=''; const {y,m}=DCAL, fi
 function openPlayCal(dias,onPick){ DCAL.mode='play'; DCAL.allowed=new Set(dias.map(d=>d.fecha)); DCAL.onPick=onPick;
   const [y,m]=(dias[0]?dias[0].fecha:hoyCL()).split('-').map(Number); DCAL.y=y; DCAL.m=m-1;
   $('dNote').textContent='Elige un día anterior para jugarlo como práctica. Los días en verde tienen daily; la marca se guarda pero no entra al ranking.';
-  $('dKeyRow').hidden=true; $('uReset').hidden=true; $('dClose').hidden=false; $('dMsg').textContent=dias.length+(dias.length===1?' día disponible.':' días disponibles.'); $('dailyCal').hidden=false; renderCal(); }
+  $('dKeyRow').hidden=true; $('dClose').hidden=false; $('dMsg').textContent=dias.length+(dias.length===1?' día disponible.':' días disponibles.'); $('dailyCal').hidden=false; renderCal(); }
 function openDailyCal(){ DCAL.mode='edit'; $('dNote').textContent='Daily de la Etapa 3. Elige un día para programar el plano, el inicio, la cafetera con café y las rutas de los jefes. Los días sin programar usan uno de los programados al azar.'; $('dClose').hidden=!E.daily;
   const [y,m]=hoyCL().split('-').map(Number); if(!DCAL.y){ DCAL.y=y; DCAL.m=m-1; } $('dailyCal').hidden=false; $('dKey').value=''; renderCal(); dailyLoadList(); }
 $('eDailyBtn').addEventListener('click',openDailyCal);
 $('dClose').addEventListener('click',()=>{ $('dailyCal').hidden=true; });
 $('dPrev').addEventListener('click',()=>{ DCAL.m--; if(DCAL.m<0){ DCAL.m=11; DCAL.y--; } renderCal(); });
 $('dNext').addEventListener('click',()=>{ DCAL.m++; if(DCAL.m>11){ DCAL.m=0; DCAL.y++; } renderCal(); });
-$('uGo').addEventListener('click',async()=>{ const n=$('uName').value.trim(), t=$('uTemp').value.trim(); if(!n||t.length<4){ $('uMsg').textContent='Escribe el usuario y una clave temporal de al menos 4 caracteres.'; return; }
-  try{ const r=await dailyRpc('resetear_clave',{p_nombre:n,p_temporal:t}); $('uMsg').textContent=r&&r.ok?`Listo: ${n} ahora entra con «${t}» y se le pedirá crear una nueva.`:(r&&r.error)||'No se pudo.'; }catch(e){ $('uMsg').textContent=netMsg(e); } });
-$('dKeyOk').addEventListener('click',()=>{ DKEY=$('dKey').value.trim(); try{ localStorage.setItem('cafecito-daily-clave',DKEY); }catch(e){} dailyLoadList(); });
+function gShow(w){ $('gHome').hidden=!w; for(const [id,k] of [['gLogin','login'],['gMenu','menu'],['gUsers','users']]) $(id).hidden=w!==k; if(w==='login'){ $('gKey').value=''; $('gMsg').textContent=''; setTimeout(()=>$('gKey').focus(),50); } }
+$('gKeyOk').addEventListener('click',async()=>{ const k=$('gKey').value.trim(); if(!k) return; $('gMsg').textContent='Revisando…';
+  try{ await supa('rpc/listar_usuarios',{method:'POST',body:JSON.stringify({p_clave:k})}); DKEY=k; gShow('menu'); }catch(e){ $('gMsg').textContent=/Clave/i.test(e.server||'')?'Contraseña incorrecta.':netMsg(e); } });
+$('gKey').addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Enter') $('gKeyOk').click(); });
+$('gOut').addEventListener('click',e=>{ e.preventDefault(); DKEY=''; $('dailyCal').hidden=true; gShow('login'); });
+$('gGoDaily').addEventListener('click',()=>{ gShow(null); openDailyCal(); });
+$('dHome').addEventListener('click',()=>{ if(typeof flushSave==='function') flushSave(); $('dailyCal').hidden=true; gShow('menu'); });
+$('gUBack').addEventListener('click',()=>gShow('menu'));
+let GU=[];
+function gURender(){ const f=$('gUFilter').value.trim().toLowerCase(), tb=$('gUBody'); tb.textContent='';
+  const list=GU.filter(u=>!f||String(u.nombre).toLowerCase().includes(f)); $('gUCount').textContent=GU.length+' usuario'+(GU.length===1?'':'s');
+  for(const u of list){ const tr=document.createElement('tr'), td=t=>{ const c=document.createElement('td'); if(t instanceof Node) c.append(t); else c.textContent=t; tr.append(c); return c; };
+    td(String(u.nombre)); td(new Date(u.creado).toLocaleDateString('es-CL',{day:'numeric',month:'short',year:'numeric'})); td(String(u.marcas));
+    const st=td(u.temporal?'Clave temporal':(u.sesiones>0?'Con sesión':'Sin sesión')); if(u.temporal) st.className='tmp';
+    const box=document.createElement('div'); box.className='rst'; const inp=document.createElement('input'); inp.placeholder='Clave temporal'; inp.maxLength=40; const b=document.createElement('button'); b.className='sm ghost'; b.textContent='Resetear';
+    inp.addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Enter') b.click(); });
+    b.addEventListener('click',async()=>{ const t=inp.value.trim(); if(t.length<4){ $('gUMsg').textContent='La clave temporal debe tener al menos 4 caracteres.'; inp.focus(); return; }
+      try{ const r=await dailyRpc('resetear_clave',{p_nombre:u.nombre,p_temporal:t}); $('gUMsg').textContent=r&&r.ok?`Listo: ${u.nombre} ahora entra con «${t}» y se le pedirá crear una contraseña nueva.`:(r&&r.error)||'No se pudo.'; if(r&&r.ok) gULoad(); }catch(e){ $('gUMsg').textContent=netMsg(e); } });
+    box.append(inp,b); td(box); tb.append(tr); }
+  if(!list.length){ const tr=document.createElement('tr'), c=document.createElement('td'); c.colSpan=5; c.textContent=GU.length?'Nadie coincide con la búsqueda.':'Todavía no hay usuarios.'; tr.append(c); tb.append(tr); } }
+async function gULoad(){ try{ GU=await dailyRpc('listar_usuarios')||[]; gURender(); }catch(e){ $('gUMsg').textContent=netMsg(e); } }
+$('gUFilter').addEventListener('input',gURender); $('gUFilter').addEventListener('keydown',e=>e.stopPropagation());
+$('gGoUsers').addEventListener('click',()=>{ gShow('users'); $('gUMsg').textContent='Para resetear: escribe una clave temporal y dísela a la persona. Al entrar se le pide crear una nueva.'; gULoad(); });
+$('dKeyOk').addEventListener('click',()=>{ DKEY=$('dKey').value.trim(); dailyLoadList(); });
 $('dKey').addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Enter') $('dKeyOk').click(); });
 function cfgMap(cfg){ if(cfg&&cfg.alias&&BUILTIN[cfg.alias]) return clone(BUILTIN[cfg.alias]); if(cfg&&cfg.map) return sanitizeMap(clone(cfg.map)); const m=clone(BUILTIN.etapa3); if(cfg){ m.start=Object.assign({},m.start,cfg.start||{}); if(Array.isArray(cfg.bosses)) m.bosses=clone(cfg.bosses); } return m; }
 function enterDaily(f){ flushSave(); let cfg=DCAL.list.get(f), from=null;
@@ -2476,7 +2512,7 @@ if(location.hash==='#editor'&&EDITOR_ON) openEditor('original'); else showScreen
 if(PAGE==='daily'){ document.body.classList.add('page-daily'); document.title='Daily · '+document.title; $('startBtn').disabled=true; $('startBtn').textContent='Jugar el daily'; }
 if(PAGE==='gestor'){ document.body.classList.add('page-gestor'); document.title='Gestor del daily · '+document.title.replace('[DEV] ','');
   if(!EDITOR_ON){ $('dailyHead').hidden=false; showScreen('menu'); $('menu').querySelector('.card').innerHTML='<h2 class="big">Gestor del daily</h2><p class="brief">El gestor funciona en el ambiente de pruebas: <a href="https://dev.operacion-cafecito.pages.dev/gestor" style="color:#ffcf3f">dev.operacion-cafecito.pages.dev/gestor</a></p>'; }
-  else setTimeout(()=>{ openEditor('etapa3'); $('eBack').textContent='← Calendario'; openDailyCal(); },0); }
+  else setTimeout(()=>{ openEditor('etapa3'); $('eBack').textContent='← Calendario'; $('dHome').hidden=false; gShow('login'); },0); }
 window.__cafe={engine,E,layout,validate,sanitizeMap,ORIGINAL,ETAPA2,ETAPA3,Store,openEditor,loadIntoEditor,geo:{pointHits,segBlocked,rayLen,lineSnap}};
 })();
 </script>
