@@ -1648,14 +1648,16 @@ async function loadDaily(){ try{ DAILY=await fetchDaily(null); }catch(e){ consol
 if(rankingOn&&PAGE!=='juego') setTimeout(loadDaily,0);
 // página /daily: el menú muestra solo el daily de hoy
 function fechaCorta(f){ return new Date(f+'T12:00').toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'}); }
-async function dailyBest(){ const box=$('dailyBest'); if(!dailyOk()){ box.hidden=true; return; }
-  try{ const list=await bestList(DAILY.name); box.hidden=false; box.textContent='';
-    const ic=document.createElement('div'); ic.className='tro'; ic.textContent='🏆'; const t=document.createElement('div'); const sm=document.createElement('small'); sm.textContent='Mejor marca de hoy'; t.appendChild(sm);
+async function dailyBest(){ if(menuPick==='practica'&&PRACT) return practiceBest(); const box=$('dailyBest'); if(!dailyOk()){ box.hidden=true; return; } return renderBest(DAILY.name,'Mejor marca de hoy','Nadie ha marcado todavía. ¡Sé el primero!'); }
+function practiceBest(){ const d=PDIAS.find(x=>x.fecha===PRACT.fecha); if(!d||!d.mapa){ $('dailyBest').hidden=true; return; } return renderBest(d.mapa,'Ganador del '+fechaCorta(d.fecha),'Nadie marcó tiempo ese día.',PRACT.fecha); }
+async function renderBest(mapa,label,vacio,tag){ const box=$('dailyBest'); box.dataset.tag=tag||'';
+  try{ const list=await bestList(mapa); if((box.dataset.tag||'')!==(tag||'')) return; box.hidden=false; box.textContent='';
+    const ic=document.createElement('div'); ic.className='tro'; ic.textContent='🏆'; const t=document.createElement('div'); const sm=document.createElement('small'); sm.textContent=label; t.appendChild(sm);
     if(list.length){ const b=document.createElement('b'); b.textContent=fmt2(Number(list[0].tiempo)); const sp=document.createElement('span'); sp.textContent='  ·  '+String(list[0].nombre); t.appendChild(b); t.appendChild(sp); }
-    else { const sp=document.createElement('span'); sp.textContent='Nadie ha marcado todavía. ¡Sé el primero!'; t.appendChild(sp); }
+    else { const sp=document.createElement('span'); sp.textContent=vacio; t.appendChild(sp); }
     box.appendChild(ic); box.appendChild(t); }catch(e){ box.hidden=true; } }
-function practiceUI(){ const on=menuPick==='practica'&&PRACT; $('dToday').hidden=!on; if(on) document.body.classList.remove('finde'); $('dailyBest').style.display=on?'none':'';
-  if(on){ $('dailyHead').textContent='Práctica · '+fechaCorta(PRACT.fecha)+' (no entra al ranking)'; $('startBtn').textContent='Jugar práctica'; $('startBtn').disabled=!engine; }
+function practiceUI(){ const on=menuPick==='practica'&&PRACT; $('dToday').hidden=!on; if(on) document.body.classList.remove('finde'); $('dailyBest').style.display='';
+  if(on){ $('dailyHead').textContent='Práctica · '+fechaCorta(PRACT.fecha)+' (no entra al ranking)'; $('startBtn').textContent='Jugar práctica'; $('startBtn').disabled=!engine; practiceBest(); }
   else { $('startBtn').textContent='Jugar el daily'; } }
 $('dPastBtn').addEventListener('click',async()=>{
   try{ const dias=await supa('rpc/daily_anteriores',{method:'POST',body:'{}'})||[]; if(!dias.length){ toast('Todavía no hay días anteriores.'); return; } PDIAS=dias; openPlayCal(dias,pickPractice); }catch(e){ toast(netMsg(e)); } });
