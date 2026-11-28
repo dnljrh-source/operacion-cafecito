@@ -231,10 +231,22 @@ body.editing #editor{display:grid}
 #gHome .gbtns{display:grid;gap:12px;margin-top:14px}#gHome .gbtns button{font-size:18px;padding:16px}#gHome label.f{margin-top:12px}#gHome .row{margin-top:14px;align-items:center;gap:10px}
 #gHome[hidden],#gHome .gcard[hidden]{display:none!important}.gulist{overflow:auto;flex:1}.gulist table{width:100%;border-collapse:collapse;font-size:14px}.gulist th{text-align:left;color:var(--muted);font-weight:500;padding:6px;position:sticky;top:0;background:#1b1f27}.gulist td{padding:7px 6px;border-top:1px solid #2a303a}
 .gulist .tmp{color:#ffcf3f}.gulist .rst{display:flex;gap:6px}.gulist .rst input{width:120px}
+#touchUI{position:fixed;inset:0;z-index:12;pointer-events:none}#touchUI[hidden]{display:none}
+#tJoy{position:absolute;left:22px;bottom:26px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.25);pointer-events:auto;touch-action:none}
+#tKnob{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.45)}#tJoy.run #tKnob{background:#ffcf3f}
+#tBtns{position:absolute;right:20px;bottom:30px;display:flex;flex-direction:column;gap:12px;align-items:flex-end;pointer-events:auto}
+#tBtns button,#tPause{touch-action:none;user-select:none;-webkit-user-select:none;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(20,24,30,.55);color:#fff;font-weight:700}
+#tAct{width:84px;height:84px;font-size:28px}#tCrouch{width:70px;height:70px;font-size:12px}#tCrouch.on{background:#ffcf3f;color:#222}#tAct.on{background:#ffcf3f;color:#222}
+#tPause{position:absolute;top:70px;right:16px;width:46px;height:46px;font-size:14px;pointer-events:auto}
+body.touch .keyhint,body.touch #ghostBadge{display:none}
+body.touch #status{left:50%;transform:translateX(-50%);bottom:40px;right:auto}#tBtns button,#tPause{padding:0;box-shadow:none;min-width:0}
 </style>
 </head>
 <body>
 <canvas id="c" tabindex="0" aria-label="Juego 3D"></canvas>
+<div id="touchUI" hidden><div id="tJoy"><div id="tKnob"></div></div>
+  <div id="tBtns"><button id="tAct">E</button><button id="tCrouch">Agachar</button></div>
+  <button id="tPause" aria-label="Pausa">❚❚</button></div>
 
 <div id="hud" aria-live="polite">
   <div id="cvig"></div><div id="vig"></div>
@@ -1323,7 +1335,7 @@ function createEngine(){
   let dragMode=false, dragging=false, lockTimer=0, suspended=false;
   function setDrag(v){ dragMode=v; document.body.classList.toggle('drag',v&&game.state==='play'); }
   function plainLock(){ try{ const q=canvas.requestPointerLock(); if(q&&typeof q.catch==='function') q.catch(()=>setDrag(true)); }catch(e){ setDrag(true); } }
-  function requestLock(){ if(!canvas.requestPointerLock){ setDrag(true); return; }
+  function requestLock(){ if(TOUCH){ setDrag(true); document.body.classList.remove('drag'); return; } if(!canvas.requestPointerLock){ setDrag(true); return; }
     // movimiento "crudo" del mouse (sin aceleración del sistema): evita los saltos de cámara en Chrome/Windows
     let p=null; try{ p=canvas.requestPointerLock({unadjustedMovement:true}); }catch(e){ p=null; }
     if(p&&typeof p.catch==='function') p.catch(()=>plainLock()); else if(p===null) plainLock();
@@ -1342,6 +1354,26 @@ function createEngine(){
   window.addEventListener('mouseup',()=>{ dragging=false; });
   canvas.addEventListener('contextmenu',e=>e.preventDefault());
   function clearKeys(){ for(const k in keys) keys[k]=false; }
+  // ---- controles táctiles (celular): joystick izquierdo, arrastrar a la derecha para mirar, botones de acción
+  const TOUCH=('ontouchstart' in window)||navigator.maxTouchPoints>0&&matchMedia('(pointer:coarse)').matches;
+  const tMove={f:0,s:0,run:false}; let joyId=null, lookId=null, lookX=0, lookY=0;
+  if(TOUCH){ document.body.classList.add('touch'); const joy=$('tJoy'), knob=$('tKnob'), R=65;
+    const joySet=(t)=>{ const r=joy.getBoundingClientRect(); let dx=t.clientX-(r.left+R), dy=t.clientY-(r.top+R); const d=Math.hypot(dx,dy), m=Math.min(d,R); if(d>0){ dx=dx/d*m; dy=dy/d*m; }
+      knob.style.transform=`translate(${dx}px,${dy}px)`; const k=m/R; tMove.f=k<0.15?0:-dy/R; tMove.s=k<0.15?0:dx/R; tMove.run=k>0.9; joy.classList.toggle('run',tMove.run); };
+    const joyEnd=()=>{ joyId=null; tMove.f=tMove.s=0; tMove.run=false; knob.style.transform=''; joy.classList.remove('run'); };
+    joy.addEventListener('touchstart',e=>{ e.preventDefault(); const t=e.changedTouches[0]; joyId=t.identifier; joySet(t); },{passive:false});
+    joy.addEventListener('touchmove',e=>{ e.preventDefault(); for(const t of e.changedTouches) if(t.identifier===joyId) joySet(t); },{passive:false});
+    joy.addEventListener('touchend',e=>{ for(const t of e.changedTouches) if(t.identifier===joyId) joyEnd(); }); joy.addEventListener('touchcancel',joyEnd);
+    canvas.addEventListener('touchstart',e=>{ if(game.state!=='play') return; e.preventDefault(); if(lookId===null){ const t=e.changedTouches[0]; lookId=t.identifier; lookX=t.clientX; lookY=t.clientY; } },{passive:false});
+    canvas.addEventListener('touchmove',e=>{ if(game.state!=='play') return; e.preventDefault(); for(const t of e.changedTouches) if(t.identifier===lookId){ lookDX+=(t.clientX-lookX)*1.6; lookDY+=(t.clientY-lookY)*1.6; lookX=t.clientX; lookY=t.clientY; } },{passive:false});
+    const lookEnd=e=>{ for(const t of e.changedTouches) if(t.identifier===lookId) lookId=null; }; canvas.addEventListener('touchend',lookEnd); canvas.addEventListener('touchcancel',lookEnd);
+    const act=$('tAct');
+    act.addEventListener('touchstart',e=>{ e.preventDefault(); if(game.state!=='play') return; act.classList.add('on'); keys.KeyE=true;
+      if(heldBall){ throwBall(); return; } const it=currentTarget; if(it&&!it.hold&&it.ready()) it.act(); },{passive:false});
+    const actEnd=e=>{ e&&e.preventDefault(); keys.KeyE=false; act.classList.remove('on'); }; act.addEventListener('touchend',actEnd); act.addEventListener('touchcancel',actEnd);
+    $('tCrouch').addEventListener('touchstart',e=>{ e.preventDefault(); if(game.state!=='play') return; P.crouch=!P.crouch; },{passive:false});
+    $('tPause').addEventListener('touchstart',e=>{ e.preventDefault(); if(game.state==='play') pause(); },{passive:false}); }
+  function touchUI(){ if(!TOUCH) return; const on=game.state==='play'; $('touchUI').hidden=!on; if(!on){ keys.KeyE=false; tMove.f=tMove.s=0; tMove.run=false; } $('tCrouch').classList.toggle('on',!!P.crouch); }
   function exitTo(where){ game.state='menu'; releaseLock(); clearKeys(); document.body.classList.remove('playing','drag','crouch'); showScreen(null); if(current.onExit) current.onExit(where); }
   document.querySelectorAll('.toEditor').forEach(b=>b.addEventListener('click',()=>exitTo('editor')));
   document.querySelectorAll('.toMenu').forEach(b=>b.addEventListener('click',()=>exitTo('menu')));
@@ -1368,7 +1400,7 @@ function createEngine(){
     setTimeout(()=>{ if(game.state==='play') toast(hint,3.2); },400);
   }
   function restart(){ start(JSON.parse(levelJSON),current.key,{name:current.name,fromEditor:current.fromEditor,onExit:current.onExit,cafetera:current.cafetera??undefined}); }
-  function pause(){ if(game.state!=='play') return; game.state='pause'; clearKeys(); dragging=false; releaseLock(); showScreen('pause'); document.body.classList.remove('drag'); }
+  function pause(){ if(game.state!=='play') return; game.state='pause'; if(TOUCH) $('touchUI').hidden=true; clearKeys(); dragging=false; releaseLock(); showScreen('pause'); document.body.classList.remove('drag'); }
   function resume(){ if(game.state!=='pause') return; audioOn(); game.state='play'; showScreen(null); setDrag(dragMode); requestLock(); }
   function caught(b){ if(game.state!=='play') return; game.state='caught'; game.catcher=b; b.susp=1; clearKeys(); sfx.caught(); releaseLock(); document.body.classList.remove('drag','crouch');
     $('cQuote').textContent='“'+b.lines[Math.floor(Math.random()*b.lines.length)]+'”'; $('cWho').textContent=b.name+', '+b.role.toLowerCase();
@@ -1411,8 +1443,8 @@ function createEngine(){
   function updatePlayer(dt){
     if(lookDX||lookDY){ P.yaw-=clamp(lookDX,-600,600)*SENS; P.pitch=clamp(P.pitch-clamp(lookDY,-600,600)*SENS,-1.35,1.35); lookDX=lookDY=0; }
     if(keys.ArrowLeft) P.yaw+=2.2*dt; if(keys.ArrowRight) P.yaw-=2.2*dt;
-    let f=0,s=0; if(keys.KeyW||keys.ArrowUp) f+=1; if(keys.KeyS||keys.ArrowDown) f-=1; if(keys.KeyD) s+=1; if(keys.KeyA) s-=1;
-    const shift=keys.ShiftLeft||keys.ShiftRight, len=Math.hypot(f,s);
+    let f=0,s=0; if(keys.KeyW||keys.ArrowUp) f+=1; if(keys.KeyS||keys.ArrowDown) f-=1; if(keys.KeyD) s+=1; if(keys.KeyA) s-=1; f+=tMove.f; s+=tMove.s; touchUI();
+    const shift=keys.ShiftLeft||keys.ShiftRight||tMove.run, len=Math.hypot(f,s);
     if(shift&&len&&P.coffee&&!P.warned){ toast('Con el café lleno no puedes correr'); P.warned=true; }
     if(shift&&len&&!P.coffee&&P.crouch) P.crouch=false;
     P.running=!!(shift&&len&&!P.coffee); P.moving=len>0; P.noisy=P.running;
@@ -1579,7 +1611,7 @@ function createEngine(){
   window.addEventListener('resize',resize); resize();
   let last=performance.now();
   function frame(now){
-    requestAnimationFrame(frame);
+    touchUI(); requestAnimationFrame(frame);
     const dt=Math.min(0.066,Math.max(0,(now-last)/1000)); last=now;
     if(suspended||!root) return;
     try{
