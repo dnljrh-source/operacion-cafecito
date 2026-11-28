@@ -224,6 +224,7 @@ body.editing #editor{display:grid}
 }
 @media(max-width:600px){#meterBox{top:auto;bottom:70px}#timer{top:auto;bottom:16px}.stats{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+.authTabs{display:flex;gap:8px;margin-bottom:10px}.ureset{margin:8px 0;padding:8px;border:1px solid #39424f;border-radius:10px}.ureset input{flex:1;min-width:0}
 </style>
 </head>
 <body>
@@ -256,6 +257,7 @@ body.editing #editor{display:grid}
       <div class="dhead"><button id="dPrev" class="ghost sm" aria-label="Mes anterior">‹</button><b id="dMonth"></b><button id="dNext" class="ghost sm" aria-label="Mes siguiente">›</button><div class="grow"></div><button id="dClose" class="ghost sm">Cerrar</button></div>
       <p class="dnote" id="dNote"></p>
       <div id="dKeyRow" hidden><label class="f">Clave para programar<input id="dKey" type="password" autocomplete="off"></label><button id="dKeyOk" class="sm">Entrar</button></div>
+      <div id="uReset" hidden class="ureset"><b>Resetear contraseña de un usuario</b><div class="row"><input id="uName" maxlength="20" placeholder="Usuario"><input id="uTemp" maxlength="40" placeholder="Clave temporal"><button id="uGo" class="sm">Resetear</button></div><p class="dnote" id="uMsg">Dile la clave temporal a la persona: al entrar se le pide crear una nueva.</p></div>
       <div class="dgrid" id="dGrid"></div>
       <p class="dnote" id="dMsg"></p>
     </div>
@@ -285,7 +287,7 @@ body.editing #editor{display:grid}
     <p class="brief ctx" style="font-size:15px;color:var(--muted)">El cono en el piso es lo que ve cada jefe; la parte intensa te ve incluso agachado. Agachado, los tabiques te tapan. Con el café lleno no puedes correr.</p>
     <label class="msel">Mapa <select id="mapPick" aria-label="Mapa a jugar"></select></label>
     <div class="row"><button id="startBtn">Jugar</button><button id="rankBtn" class="ghost" hidden>Ranking</button><button id="editBtn" class="ghost">Editor de mapas</button></div>
-    <p class="note" id="whoLine" hidden>Jugando como <b id="whoName"></b> · <a href="#" id="whoChange">cambiar</a></p>
+    <p class="note" id="whoLine" hidden><span id="whoIn">Jugando como <b id="whoName"></b> · <a href="#" id="whoOut">cerrar sesión</a></span><span id="whoAnon">No has iniciado sesión · <a href="#" id="whoLogin">Entrar o crear usuario</a></span></p>
     <p id="err" hidden></p>
     <p class="note" id="touchNote" hidden>El juego necesita teclado y mouse.</p>
   </div>
@@ -308,10 +310,14 @@ body.editing #editor{display:grid}
 </div>
 <div id="nameAsk" class="screen">
   <div class="card">
-    <h2 class="big">¿Cómo te llamas?</h2>
-    <p class="brief">Es el nombre que sale en el ranking. Queda guardado en este navegador y no te lo vuelvo a preguntar.</p>
-    <label class="f">Tu nombre<input id="nName" maxlength="20" placeholder="Ej: Pedro" autocomplete="nickname"></label>
-    <div class="row"><button id="nOk">Listo</button><button id="nBack" class="ghost">Volver</button><span id="nMsg" role="status"></span></div>
+    <div class="authTabs" id="aTabs"><button id="aTabIn" class="sm">Entrar</button><button id="aTabNew" class="sm ghost">Crear usuario</button></div>
+    <h2 class="big" id="aTitle">Entra con tu usuario</h2>
+    <p class="brief" id="aBrief">Para guardar marcas en el ranking necesitas tu usuario y contraseña. La sesión queda iniciada en este navegador hasta que la cierres.</p>
+    <label class="f" id="aNameRow">Nombre de usuario<input id="nName" maxlength="20" placeholder="Ej: Pedro" autocomplete="username"></label>
+    <label class="f" id="aPassRow"><span id="aPassLbl">Contraseña</span><input id="aPass" type="password" maxlength="72" autocomplete="current-password"></label>
+    <label class="f" id="aPass2Row" hidden>Repite la contraseña<input id="aPass2" type="password" maxlength="72" autocomplete="new-password"></label>
+    <div class="row"><button id="nOk">Entrar</button><button id="nBack" class="ghost">Volver</button><span id="nMsg" role="status"></span></div>
+    <p class="note" id="aSkipRow" hidden><a href="#" id="aSkip">Jugar sin sesión (no guarda marcas)</a></p>
   </div>
 </div>
 
@@ -326,7 +332,6 @@ body.editing #editor{display:grid}
     </div>
     <div class="routeBox" id="wRouteBox" hidden><canvas id="wRoute" aria-label="Plano con el recorrido"></canvas><div class="routeCap" id="wRouteCap"></div></div>
     <div class="scorebox" id="saveBox" hidden>
-      <label class="f" id="wNameRow" hidden>Tu nombre para el ranking<input id="wName" maxlength="20" placeholder="Ej: Pedro" autocomplete="nickname"></label>
       <div class="row"><button id="wSave" class="sm">Guardar en el ranking</button><span id="wMsg" role="status"></span></div>
       <div class="rscroll" id="wTopBox" hidden><table class="rtable"><thead><tr><th class="n">#</th><th>Nombre</th><th class="n">Tiempo</th><th class="n">Visto</th><th>Nota</th><th>Fecha</th></tr></thead><tbody id="wTop"></tbody></table></div>
     </div>
@@ -1625,7 +1630,8 @@ function showMenu(){
   showScreen('menu'); if(PAGE==='daily'&&rankingOn&&typeof loadDaily==='function'&&(!DAILY||DAILY.fecha!==hoyCLg())){ delete dailyCache.hoy; loadDaily(); }
 }
 $('mapPick').addEventListener('change',()=>{ menuPick=$('mapPick').value; const m=mapById(menuPick); if(m&&engine) engine.load(m.map,menuPick,m.name); });
-$('startBtn').addEventListener('click',()=>{ if(!engine) return; if(rankingOn&&!myName){ askName(()=>$('startBtn').click()); return; } const m=mapById(menuPick)||mapById('original'); engine.start(m.map,menuPick,{name:m.name,cafetera:m.cafetera,onExit:w=>{ if(w==='editor') openEditor(menuPick); else showMenu(); }}); });
+let startSkip=false;
+$('startBtn').addEventListener('click',()=>{ if(!engine) return; if(rankingOn&&!myToken&&!startSkip){ const go=()=>{ if(go.skip) startSkip=true; $('startBtn').click(); }; askAuth(go,'in',true); return; } const m=mapById(menuPick)||mapById('original'); engine.start(m.map,menuPick,{name:m.name,cafetera:m.cafetera,onExit:w=>{ if(w==='editor') openEditor(menuPick); else showMenu(); }}); });
 if(!engine) $('startBtn').disabled=true;
 $('editBtn').addEventListener('click',()=>{ try{ history.replaceState(null,'','#editor'); }catch(e){} openEditor(menuPick); });
 window.addEventListener('hashchange',()=>{ if(location.hash==='#editor'){ if(!document.body.classList.contains('editing')) openEditor(menuPick); } else if(document.body.classList.contains('editing')) closeEditor(); });
@@ -1775,16 +1781,40 @@ async function showRemoteRoute(r,mapName,w){
     showRoute(w,map,ruta,title);
   }catch(e){ cap.textContent=netMsg(e); }
 }
-let myName=''; try{ myName=localStorage.getItem('cafecito-nombre')||''; }catch(e){}
-function setMyName(n){ myName=String(n||'').trim().slice(0,20); try{ localStorage.setItem('cafecito-nombre',myName); }catch(e){} refreshWho(); }
-function refreshWho(){ $('whoLine').hidden=!rankingOn||!myName; $('whoName').textContent=myName; }
-let nameNext=null;
-function askName(next){ nameNext=next||null; $('nName').value=myName; $('nMsg').textContent=''; showScreen('nameAsk'); setTimeout(()=>$('nName').focus(),50); }
-$('nOk').addEventListener('click',()=>{ const n=$('nName').value.trim(); if(!n){ $('nMsg').textContent='Escribe un nombre.'; $('nName').focus(); return; }
-  setMyName(n); const go=nameNext; nameNext=null; showScreen('menu'); if(go) go(); });
-$('nName').addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Enter') $('nOk').click(); });
-$('nBack').addEventListener('click',()=>{ nameNext=null; showScreen('menu'); });
-$('whoChange').addEventListener('click',e=>{ e.preventDefault(); askName(null); });
+let myName='', myToken='', myTemp=false, lastTyped=''; try{ myToken=localStorage.getItem('cafecito-sesion')||''; myName=myToken?(localStorage.getItem('cafecito-nombre')||''):''; lastTyped=localStorage.getItem('cafecito-nombre')||''; }catch(e){}
+function setSession(tok,nombre,temp){ myToken=tok||''; myName=myToken?String(nombre||''):''; myTemp=!!temp; try{ if(myToken){ localStorage.setItem('cafecito-sesion',myToken); localStorage.setItem('cafecito-nombre',myName); } else localStorage.removeItem('cafecito-sesion'); }catch(e){} refreshWho(); }
+function refreshWho(){ $('whoLine').hidden=!rankingOn; $('whoIn').hidden=!myToken; $('whoAnon').hidden=!!myToken; $('whoName').textContent=myName; }
+async function rpcU(fn,args){ return await supa('rpc/'+fn,{method:'POST',body:JSON.stringify(args)}); }
+if(myToken) rpcU('sesion_usuario',{p_token:myToken}).then(r=>{ if(r&&r.ok){ setSession(myToken,r.nombre,r.temporal); if(r.temporal) askAuth(null,'temp'); } else setSession('',''); }).catch(()=>{});
+let nameNext=null, aMode='in', aSkipOk=false;
+function aSetMode(m){ aMode=m; const nw=m==='new', tp=m==='temp';
+  $('aTabs').hidden=tp; $('aTabIn').classList.toggle('ghost',m!=='in'); $('aTabNew').classList.toggle('ghost',!nw);
+  $('aTitle').textContent=tp?'Crea tu nueva contraseña':nw?'Crea tu usuario':'Entra con tu usuario';
+  $('aBrief').textContent=tp?'Entraste con una clave temporal. Elige una contraseña nueva que solo tú sepas.':nw?'Elige un nombre (es el que sale en el ranking) y una contraseña. No se pide correo: guarda bien tu contraseña.':'Para guardar marcas en el ranking necesitas tu usuario y contraseña. La sesión queda iniciada en este navegador hasta que la cierres.';
+  $('aNameRow').hidden=tp; $('aPass2Row').hidden=!(nw||tp); $('aPassLbl').textContent=tp?'Contraseña nueva':'Contraseña';
+  $('aPass').autocomplete=nw||tp?'new-password':'current-password'; $('nOk').textContent=tp?'Guardar contraseña':nw?'Crear usuario':'Entrar'; $('nMsg').textContent=''; $('aSkipRow').hidden=!aSkipOk||tp; }
+function askAuth(next,mode,skip){ nameNext=next||null; aSkipOk=!!skip; $('nName').value=myName||lastTyped; $('aPass').value=''; $('aPass2').value=''; aSetMode(mode||'in'); showScreen('nameAsk'); setTimeout(()=>($('nName').value&&mode!=='new'?$('aPass'):$('nName')).focus(),50); }
+function askName(next){ askAuth(next,'in',true); }
+$('aTabIn').addEventListener('click',()=>aSetMode('in')); $('aTabNew').addEventListener('click',()=>aSetMode('new'));
+$('nOk').addEventListener('click',async()=>{ const n=$('nName').value.trim(), p1=$('aPass').value, p2=$('aPass2').value, msg=t=>$('nMsg').textContent=t;
+  if(aMode!=='temp'&&!n){ msg('Escribe tu nombre de usuario.'); $('nName').focus(); return; }
+  if(!p1){ msg('Escribe la contraseña.'); $('aPass').focus(); return; }
+  if(aMode!=='in'){ if(p1.length<4){ msg('La contraseña debe tener al menos 4 caracteres.'); return; } if(p1!==p2){ msg('Las contraseñas no coinciden.'); $('aPass2').focus(); return; } }
+  $('nOk').disabled=true; msg('Un momento…');
+  try{ let r;
+    if(aMode==='temp'){ r=await rpcU('cambiar_clave',{p_token:myToken,p_nueva:p1}); if(r&&r.ok) setSession(myToken,myName,false); }
+    else { r=await rpcU(aMode==='new'?'crear_usuario':'iniciar_sesion',{p_nombre:n,p_clave:p1}); if(r&&r.ok){ lastTyped=r.nombre; setSession(r.token,r.nombre,r.temporal); } }
+    $('nOk').disabled=false;
+    if(!r||!r.ok){ msg((r&&r.error)||'No se pudo.'); return; }
+    if(myTemp){ aSetMode('temp'); $('aPass').value=''; $('aPass2').value=''; $('aPass').focus(); return; }
+    toast(aMode==='new'?'¡Usuario creado! Ya puedes guardar marcas.':'Sesión iniciada como '+myName,2.4);
+    const go=nameNext; nameNext=null; showScreen(go&&go.screen?go.screen:'menu'); if(go) go(); }
+  catch(e){ $('nOk').disabled=false; msg(netMsg(e)); } });
+for(const id of ['nName','aPass','aPass2']) $(id).addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Enter') $('nOk').click(); });
+$('nBack').addEventListener('click',()=>{ const go=nameNext; nameNext=null; showScreen(go&&go.screen?go.screen:'menu'); });
+$('aSkip').addEventListener('click',e=>{ e.preventDefault(); const go=nameNext; nameNext=null; showScreen('menu'); if(go){ go.skip=true; go(); } });
+$('whoOut').addEventListener('click',e=>{ e.preventDefault(); const t=myToken; setSession('',''); if(t) rpcU('cerrar_sesion',{p_token:t}).catch(()=>{}); toast('Sesión cerrada',1.6); });
+$('whoLogin').addEventListener('click',e=>{ e.preventDefault(); askAuth(null,'in'); });
 setTimeout(refreshWho,0);
 let lastRun=null, saving=false;
 // Cada partida se registra en el servidor al empezar: anota la hora y sortea la cafetera con café.
@@ -1801,25 +1831,24 @@ document.addEventListener('cafe-win',ev=>{
   const d=ev.detail; lastMap=d.map||null; showRoute('w',lastMap,d.ruta,'Tu recorrido');
   lastRun={m:d.m,t:Math.round(d.t*100)/100,s:d.s,st:d.st,lb:d.lb,seq:d.seq,ruta:d.ruta,saved:false};
   const box=$('saveBox'); box.hidden=!rankingOn||d.fromEditor||d.ghost; if(box.hidden) return;
-  $('wName').value=myName; $('wSave').disabled=false; $('wTopBox').hidden=true; $('wNameRow').hidden=!!myName; $('wSave').hidden=!!myName;
+  $('wSave').disabled=false; $('wTopBox').hidden=true; $('wSave').hidden=!!myToken&&!myTemp; $('wSave').textContent=myToken?'Guardar en el ranking':'Entrar y guardar mi marca';
   if(lastRun.t<Math.max(8,lastRun.lb*0.97)){ $('wMsg').textContent='Ese tiempo es más rápido de lo que permite el mapa, así que no se puede guardar.'; $('wSave').disabled=true; $('wSave').hidden=true; return; }
-  if(myName){ $('wMsg').textContent=`Guardando como ${myName}…`; setTimeout(()=>$('wSave').click(),0); }
-  else $('wMsg').textContent='¿Quieres anotarte?';
+  if(myToken&&!myTemp){ $('wMsg').textContent=`Guardando como ${myName}…`; setTimeout(()=>$('wSave').click(),0); }
+  else $('wMsg').textContent='Inicia sesión para guardar tu marca en el ranking.';
 });
-$('wName').addEventListener('input',()=>setMyName($('wName').value));
-$('wName').addEventListener('keydown',e=>{ if(e.key==='Enter') $('wSave').click(); });
 $('wSave').addEventListener('click',async()=>{
   if(!lastRun||lastRun.saved||saving) return;
-  const n=$('wName').value.trim().slice(0,20); if(!n){ $('wMsg').textContent='Primero escribe tu nombre.'; $('wName').focus(); return; }
+  if(!myToken||myTemp){ const go=()=>{ if(myToken&&!myTemp) $('wSave').click(); }; go.screen='win'; askAuth(go,myTemp?'temp':'in'); return; }
+  const n=myName;
   saving=true; $('wSave').disabled=true; $('wMsg').textContent='Guardando…';
   try{
     const r=curRun; if(r.seq!==lastRun.seq) throw Object.assign(new Error('partida'),{status:400,server:'Esta partida ya no se puede guardar.'});
     if(!r.id&&r.wait) await r.wait;
     if(!r.id){ lastRun.saved=true; $('wMsg').textContent=r.err||'Esta partida no quedó registrada, así que no se puede guardar.'; saving=false; return; }
-    const res=await supa('rpc/guardar_puntaje',{method:'POST',body:JSON.stringify({p_partida:r.id,p_nombre:n,p_tiempo:lastRun.t,p_visto:lastRun.s,p_estrellas:lastRun.st,p_ruta:lastRun.ruta})});
+    const res=await supa('rpc/guardar_puntaje_sesion',{method:'POST',body:JSON.stringify({p_partida:r.id,p_token:myToken,p_tiempo:lastRun.t,p_visto:lastRun.s,p_estrellas:lastRun.st,p_ruta:lastRun.ruta})});
     if(!res||res.ok!==true){ const msg=(res&&res.error)||'El ranking rechazó el puntaje.';
       if(res&&res.reintentar){ const lr=lastRun; $('wMsg').textContent='Guardaste otra marca hace poco: se guarda sola en unos segundos…'; saving=false; setTimeout(()=>{ if(lastRun===lr&&!lr.saved){ $('wSave').disabled=false; $('wSave').click(); } },10500); return; }
-      $('wMsg').textContent=msg; if(/nombre/i.test(msg)){ $('wNameRow').hidden=false; $('wSave').hidden=false; $('wSave').disabled=false; $('wName').select(); $('wName').focus(); } else lastRun.saved=true; saving=false; return; }
+      $('wMsg').textContent=msg; if(res&&res.sesion){ setSession('',''); $('wSave').textContent='Entrar y guardar mi marca'; $('wSave').hidden=false; $('wSave').disabled=false; } else lastRun.saved=true; saving=false; return; }
     lastRun.saved=true;
     if(String(lastRun.m).startsWith(PRACT_PFX)){ $('wMsg').textContent='Práctica guardada. Las prácticas no entran al ranking.'; saving=false; return; }
     const list=await bestList(lastRun.m); const pos=list.findIndex(r=>String(r.nombre).trim().toLowerCase()===n.toLowerCase())+1;
@@ -1963,7 +1992,7 @@ const hoyCL=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago'}).f
 async function dailyRpc(fn,args){ try{ return await supa('rpc/'+fn,{method:'POST',body:JSON.stringify(Object.assign({p_clave:DKEY},args||{}))}); }
   catch(e){ if(/Clave/i.test(e.server||'')){ DKEY=''; try{ localStorage.removeItem('cafecito-daily-clave'); }catch(err){} } throw e; } }
 async function dailyLoadList(){ $('dMsg').textContent='Cargando…';
-  try{ const rows=await dailyRpc('listar_daily')||[]; DCAL.list=new Map(rows.map(r=>[r.fecha,r.config])); DCAL.loaded=true; $('dKeyRow').hidden=true; $('dMsg').textContent=DCAL.list.size?`${DCAL.list.size} día${DCAL.list.size===1?'':'s'} programado${DCAL.list.size===1?'':'s'}.`:'Todavía no hay días programados.'; }
+  try{ const rows=await dailyRpc('listar_daily')||[]; DCAL.list=new Map(rows.map(r=>[r.fecha,r.config])); DCAL.loaded=true; $('dKeyRow').hidden=true; $('uReset').hidden=PAGE!=='gestor'; $('dMsg').textContent=DCAL.list.size?`${DCAL.list.size} día${DCAL.list.size===1?'':'s'} programado${DCAL.list.size===1?'':'s'}.`:'Todavía no hay días programados.'; }
   catch(e){ DCAL.loaded=false; $('dKeyRow').hidden=false; $('dMsg').textContent=DKEY?netMsg(e):'Escribe la clave para ver y programar los días.'; }
   renderCal(); }
 function renderCal(){ const g=$('dGrid'); g.textContent=''; const {y,m}=DCAL, first=new Date(y,m,1), days=new Date(y,m+1,0).getDate(), off=(first.getDay()+6)%7, hoy=hoyCL();
@@ -1979,13 +2008,15 @@ function renderCal(){ const g=$('dGrid'); g.textContent=''; const {y,m}=DCAL, fi
 function openPlayCal(dias,onPick){ DCAL.mode='play'; DCAL.allowed=new Set(dias.map(d=>d.fecha)); DCAL.onPick=onPick;
   const [y,m]=(dias[0]?dias[0].fecha:hoyCL()).split('-').map(Number); DCAL.y=y; DCAL.m=m-1;
   $('dNote').textContent='Elige un día anterior para jugarlo como práctica. Los días en verde tienen daily; la marca se guarda pero no entra al ranking.';
-  $('dKeyRow').hidden=true; $('dClose').hidden=false; $('dMsg').textContent=dias.length+(dias.length===1?' día disponible.':' días disponibles.'); $('dailyCal').hidden=false; renderCal(); }
+  $('dKeyRow').hidden=true; $('uReset').hidden=true; $('dClose').hidden=false; $('dMsg').textContent=dias.length+(dias.length===1?' día disponible.':' días disponibles.'); $('dailyCal').hidden=false; renderCal(); }
 function openDailyCal(){ DCAL.mode='edit'; $('dNote').textContent='Daily de la Etapa 3. Elige un día para programar el plano, el inicio, la cafetera con café y las rutas de los jefes. Los días sin programar usan uno de los programados al azar.'; $('dClose').hidden=!E.daily;
   const [y,m]=hoyCL().split('-').map(Number); if(!DCAL.y){ DCAL.y=y; DCAL.m=m-1; } $('dailyCal').hidden=false; $('dKey').value=''; renderCal(); dailyLoadList(); }
 $('eDailyBtn').addEventListener('click',openDailyCal);
 $('dClose').addEventListener('click',()=>{ $('dailyCal').hidden=true; });
 $('dPrev').addEventListener('click',()=>{ DCAL.m--; if(DCAL.m<0){ DCAL.m=11; DCAL.y--; } renderCal(); });
 $('dNext').addEventListener('click',()=>{ DCAL.m++; if(DCAL.m>11){ DCAL.m=0; DCAL.y++; } renderCal(); });
+$('uGo').addEventListener('click',async()=>{ const n=$('uName').value.trim(), t=$('uTemp').value.trim(); if(!n||t.length<4){ $('uMsg').textContent='Escribe el usuario y una clave temporal de al menos 4 caracteres.'; return; }
+  try{ const r=await dailyRpc('resetear_clave',{p_nombre:n,p_temporal:t}); $('uMsg').textContent=r&&r.ok?`Listo: ${n} ahora entra con «${t}» y se le pedirá crear una nueva.`:(r&&r.error)||'No se pudo.'; }catch(e){ $('uMsg').textContent=netMsg(e); } });
 $('dKeyOk').addEventListener('click',()=>{ DKEY=$('dKey').value.trim(); try{ localStorage.setItem('cafecito-daily-clave',DKEY); }catch(e){} dailyLoadList(); });
 $('dKey').addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Enter') $('dKeyOk').click(); });
 function cfgMap(cfg){ if(cfg&&cfg.alias&&BUILTIN[cfg.alias]) return clone(BUILTIN[cfg.alias]); if(cfg&&cfg.map) return sanitizeMap(clone(cfg.map)); const m=clone(BUILTIN.etapa3); if(cfg){ m.start=Object.assign({},m.start,cfg.start||{}); if(Array.isArray(cfg.bosses)) m.bosses=clone(cfg.bosses); } return m; }
