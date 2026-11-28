@@ -1831,14 +1831,14 @@ $('wSave').addEventListener('click',async()=>{
   saving=false;
 });
 const RK={past:false,mapa:'',fecha:'',dias:[]};
-async function loadShame(){ const box=$('shameBox'), ul=$('shameList');
-  try{ const rows=await supa('tramposos?select=nombre,mapa,tiempo,motivo,creado&order=creado.desc&limit=30')||[]; ul.textContent=''; box.hidden=!rows.length;
+async function loadShame(mapa){ const box=$('shameBox'), ul=$('shameList');
+  try{ if(!mapa){ box.hidden=true; return; } // cada día tiene su propio muro
+    const rows=await supa('tramposos?select=nombre,mapa,tiempo,motivo,creado&mapa=eq.'+encodeURIComponent(mapa)+'&order=creado.desc&limit=30')||[]; ul.textContent=''; box.hidden=!rows.length;
     for(const r of rows){ const li=document.createElement('li'), poo=document.createElement('span'), t=document.createElement('div'), b=document.createElement('b'), sm=document.createElement('small');
       poo.className='poo'; poo.textContent='💩'; b.textContent=String(r.nombre); const donde=String(r.mapa).startsWith(DAILY_PFX)?'Daily del '+new Date(r.mapa.slice(DAILY_PFX.length)+'T12:00').toLocaleDateString('es-CL',{day:'numeric',month:'short'}):String(r.mapa);
       sm.textContent=' · '+donde+(r.tiempo!=null?' · '+fmt2(Number(r.tiempo)):'')+' — '+String(r.motivo); t.append(b,sm); li.append(poo,t); ul.appendChild(li); } }catch(e){ box.hidden=true; } }
 async function loadRank(){
-  loadShame();
-  const m=PAGE==='daily'?RK.mapa:$('rMap').value; if(!m){ $('rBody').textContent=''; $('rMsg').textContent='Hoy no hay daily programado.'; return; } $('rMsg').textContent='Cargando…'; $('rBody').textContent='';
+  const m=PAGE==='daily'?RK.mapa:$('rMap').value; loadShame(m); if(!m){ $('rBody').textContent=''; $('rMsg').textContent='Hoy no hay daily programado.'; return; } $('rMsg').textContent='Cargando…'; $('rBody').textContent='';
   try{ const list=await bestList(m); fillRows($('rBody'),list.slice(0,10),myName?{n:myName,t:-1}:null,true,r=>showRemoteRoute(r,m,'r')); $('rRouteBox').hidden=true;
     if(myName){ const pos=list.findIndex(r=>String(r.nombre).trim().toLowerCase()===myName.toLowerCase())+1; [...$('rBody').children].forEach((tr,i)=>{ if(i===pos-1) tr.classList.add('me'); }); }
     $('rMsg').textContent=list.length?`${list.length} jugador${list.length===1?'':'es'} en este mapa.`:'Todavía nadie se anota en este mapa. ¡Sé el primero!'; }
